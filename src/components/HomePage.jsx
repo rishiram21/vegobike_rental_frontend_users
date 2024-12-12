@@ -5,18 +5,18 @@ import { useGlobalState } from "../context/GlobalStateContext";
 
 // Cities list
 const cities = [
-  { name: "Pune", image: "/public/pune.jpg" },
-  { name: "Mumbai", image: "/public/mumbai.jpg" },
-  { name: "Nagpur", image: "/public/nagpur.jpg" },
-  { name: "Rajastan", image: "/public/rajastan.jpg" },
-  { name: "Delhi", image: "/public/delhi.jpg" },
-  { name: "Agra", image: "/public/agra.jpg" },
-  { name: "Banglore", image: "/public/banglore.jpg" },
-  { name: "Indore", image: "/public/indore.jpg" },
-  { name: "Kolhapur", image: "/public/kolhapur.jpg" },
-  { name: "Satara", image: "/public/satara.jpg" },
-  { name: "Gujrat", image: "/public/gujrat.png" },
-  { name: "Nashik", image: "/public/nashik.jpg" },
+  { name: "Pune", image: "/city/pune.jpg" },
+  { name: "Mumbai", image: "/city/mumbai.jpg" },
+  { name: "Nagpur", image: "/city/nagpur.jpg" },
+  { name: "Rajastan", image: "/city/rajastan.jpg" },
+  { name: "Delhi", image: "/city/delhi.jpg" },
+  { name: "Agra", image: "/city/agra.jpg" },
+  { name: "Banglore", image: "/city/banglore.jpg" },
+  { name: "Indore", image: "/city/indore.jpg" },
+  { name: "Kolhapur", image: "/city/kolhapur.jpg" },
+  { name: "Satara", image: "/city/satara.jpg" },
+  { name: "Gujrat", image: "/city/gujrat.png" },
+  { name: "Nashik", image: "/city/nashik.jpg" },
 ];
 
 const HomePage = () => {
@@ -28,7 +28,7 @@ const HomePage = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [errors, setErrors] = useState({});
-  const [selectedCityImage, setSelectedCityImage] = useState("/bikes/okbikesimg.jpg"); // Default image
+  const [selectedCityImage, setSelectedCityImage] = useState("public/bikes/okbikesimg.jpg"); // Default image
 
   // Function to format date to "yyyy-MM-ddTHH:mm"
   const formatDateForInput = (date) => {
