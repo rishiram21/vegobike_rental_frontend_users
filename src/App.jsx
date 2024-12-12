@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import BikeList from "./components/BikeList";
 import HomePage from "./components/HomePage"; // HomePage Component
@@ -11,7 +11,7 @@ import LoadingPage from "./components/LoadingPage"; // Loading Page
 import Footer from "./components/Footer";
 import CheckoutPage from "./components/CheckoutPage";
 import { GlobalStateProvider } from "./context/GlobalStateContext";
-// import ProjectInfoPage from "./components/ProjectInfoPage"; // Commented out as no longer needed
+import ContactUs from "./pages/ContactUs"; // Import ContactUs Component
 
 // Wrapper to conditionally render the Navbar
 const ConditionalNavbar = ({ children }) => {
@@ -70,14 +70,7 @@ const App = () => {
               <Route path="/" element={<HomePage />} />
 
               {/* Hero Page Route */}
-              <Route
-                path="/hero"
-                element={
-                  <>
-                    <BikeList />
-                  </>
-                }
-              />
+              <Route path="/hero" element={<BikeList />} />
 
               {/* Bike Details Page Route */}
               <Route path="/bike-details" element={<BikeDetailsPage />} />
@@ -90,6 +83,9 @@ const App = () => {
 
               {/* Checkout Page Route */}
               <Route path="/checkout" element={<CheckoutPage />} />
+
+              {/* Contact Us Page Route */}
+              <Route path="/contactus" element={<ContactUs />} />
             </Routes>
             {/* Floating WhatsApp Icon */}
             <WhatsAppIcon />
