@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Updated bike data with deposit fixed to ₹500
 const bikes = [
   { id: 1, name: "Honda CB Unicorn 150", basePrice: 599, img: "/bikes/splender.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2018, locations: ["Hadapsar", "Wakad"] },
   { id: 2, name: "Honda Activa 5G", basePrice: 399, img: "/bikes/activai.jpg", type: "Automatic", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2019, locations: ["Wakad", "Kothrud"] },
@@ -13,7 +12,6 @@ const bikes = [
   { id: 8, name: "TVS Jupiter", basePrice: 299, img: "/bikes/jupiter.jpg", type: "Automatic", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2020, locations: ["Kothrud", "Hadapsar"] },
   { id: 9, name: "Royal Enfield Classic 350", basePrice: 999, img: "/bikes/activa.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2017, locations: ["Wakad"] },
   { id: 10, name: "Bajaj Pulsar 150", basePrice: 499, img: "/bikes/pulsar.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2021, locations: ["Kothrud", "Hadapsar"] },
-
 ];
 
 const BikeList = () => {
@@ -21,7 +19,7 @@ const BikeList = () => {
   const [filteredBikes, setFilteredBikes] = useState(bikes);
   const [selectedFilters, setSelectedFilters] = useState({ transmissionType: [], fuelType: [], location: "" });
   const [sortOrder, setSortOrder] = useState("");
-  const [showFilters, setShowFilters] = useState(false);  // State to toggle filter section visibility
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const toggleFilter = (filterArray, value) =>
     filterArray.includes(value) ? filterArray.filter((item) => item !== value) : [...filterArray, value];
@@ -52,61 +50,61 @@ const BikeList = () => {
 
   return (
     <div className="container mx-auto py-6 border-6 flex flex-col lg:flex-row">
-      {/* Mobile Filter Toggle Button */}
-      <div className="lg:hidden flex justify-start p-4">
-        <button 
-          className="p-2 bg-orange-100 text-orange-700 border border-gray-400 transition-all duration-300 ease-in-out transform hover:bg-orange-300 hover:scale-105" 
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          Filters
-        </button>
-      </div>
-
       {/* Filter Section */}
-      {showFilters && (
-        <aside className="w-full lg:w-1/4 bg-gray-100 p-4 mb-6 lg:mb-0">
-          <h3 className="text-lg font-bold mb-4 text-gray-900">Filters</h3>
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">Transmission Type</h4>
-            <label className="flex items-center mb-2 text-sm">
-              <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Manual")} /> Gear
-            </label>
-            <label className="flex items-center text-sm">
-              <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Automatic")} /> Gearless
-            </label>
-          </div>
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
-            <label className="flex items-center mb-2 text-sm">
-              <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Petrol")} /> Petrol
-            </label>
-            <label className="flex items-center text-sm">
-              <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Electric")} /> Electric
-            </label>
-          </div>
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">Location</h4>
-            <select
-              className="w-full p-3 border-2 border-gray-300 bg-white text-gray-700 text-sm transition-all duration-300 ease-in-out transform hover:scale-105 focus:ring-2 focus:outline-none"
-              onChange={(e) => updateFilters("location", e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Hadapsar">Hadapsar</option>
-              <option value="Wakad">Wakad</option>
-              <option value="Kothrud">Kothrud</option>
-            </select>
-          </div>
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By Price</h4>
-            <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>
-              Low to High
-            </button>
-            <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
-              High to Low
-            </button>
-          </div>
-        </aside>
-      )}
+      <aside
+        className={`w-full lg:w-1/4 bg-gray-100 p-4 mb-6 lg:mb-0 transition-all duration-300 ease-in-out ${
+          isFilterOpen ? "block" : "hidden"
+        } lg:block`}
+      >
+        <h3 className="text-lg font-bold mb-4 text-gray-900">Filters</h3>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">Transmission Type</h4>
+          <label className="flex items-center mb-2 text-sm">
+            <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Manual")} /> Gear
+          </label>
+          <label className="flex items-center text-sm">
+            <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Automatic")} /> Gearless
+          </label>
+        </div>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
+          <label className="flex items-center mb-2 text-sm">
+            <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Petrol")} /> Petrol
+          </label>
+          <label className="flex items-center text-sm">
+            <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Electric")} /> Electric
+          </label>
+        </div>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">Location</h4>
+          <select
+            className="w-full p-3 border-2 border-gray-300 bg-white text-gray-700 text-sm transition-all duration-300 ease-in-out transform hover:scale-105 focus:ring-2 focus:outline-none"
+            onChange={(e) => updateFilters("location", e.target.value)}
+          >
+            <option value="">All</option>
+            <option value="Hadapsar">Hadapsar</option>
+            <option value="Wakad">Wakad</option>
+            <option value="Kothrud">Kothrud</option>
+          </select>
+        </div>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By Price</h4>
+          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>
+            Low to High
+          </button>
+          <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
+            High to Low
+          </button>
+        </div>
+      </aside>
+
+      {/* Toggle Button for Small Screens */}
+      <button
+        className="lg:hidden fixed bottom-5 left-5 w-12 h-12 bg-orange-100 text-orange-600 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 z-50"
+        onClick={() => setIsFilterOpen(!isFilterOpen)}
+      >
+        <span className="text-lg font-bold">F</span>
+      </button>
 
       {/* Bike Listing */}
       <main className="w-full lg:w-3/4 pl-0 lg:pl-6">
@@ -116,7 +114,6 @@ const BikeList = () => {
               <img src={bike.img} alt={bike.name} className="w-full h-40 object-cover" />
               <h3 className="text-base font-medium mt-2 truncate">{bike.name}</h3>
               <p className="text-xs text-gray-600 mt-1">Year: {bike.makeYear}</p>
-              
               {/* "Available at" Dropdown */}
               <div className="mt-3 text-sm font-semibold text-gray-700">Available at</div>
               <select
