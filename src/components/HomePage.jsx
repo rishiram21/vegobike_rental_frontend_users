@@ -28,7 +28,7 @@ const HomePage = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [errors, setErrors] = useState({});
-  const [selectedCityImage, setSelectedCityImage] = useState("public/bikes/okbikesimg.jpg"); // Default image
+  const [selectedCityImage, setSelectedCityImage] = useState("/bikes/okbikesimg.jpg"); // Default image
 
   // Function to format date to "yyyy-MM-ddTHH:mm"
   const formatDateForInput = (date) => {
