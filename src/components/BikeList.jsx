@@ -21,6 +21,7 @@ const BikeList = () => {
   const [filteredBikes, setFilteredBikes] = useState(bikes);
   const [selectedFilters, setSelectedFilters] = useState({ transmissionType: [], fuelType: [], location: "" });
   const [sortOrder, setSortOrder] = useState("");
+  const [showFilters, setShowFilters] = useState(false);  // State to toggle filter section visibility
 
   const toggleFilter = (filterArray, value) =>
     filterArray.includes(value) ? filterArray.filter((item) => item !== value) : [...filterArray, value];
@@ -51,49 +52,61 @@ const BikeList = () => {
 
   return (
     <div className="container mx-auto py-6 border-6 flex flex-col lg:flex-row">
+      {/* Mobile Filter Toggle Button */}
+      <div className="lg:hidden flex justify-start p-4">
+        <button 
+          className="p-2 bg-orange-100 text-orange-700 border border-gray-400 transition-all duration-300 ease-in-out transform hover:bg-orange-300 hover:scale-105" 
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          Filters
+        </button>
+      </div>
+
       {/* Filter Section */}
-      <aside className="w-full lg:w-1/4 bg-gray-100 p-4 -lg mb-6 lg:mb-0">
-        <h3 className="text-lg font-bold mb-4 text-gray-900">Filters</h3>
-        <div className="mb-6">
-          <h4 className="font-semibold mb-2 text-sm text-gray-700">Transmission Type</h4>
-          <label className="flex items-center mb-2 text-sm">
-            <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Manual")} /> Gear
-          </label>
-          <label className="flex items-center text-sm">
-            <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Automatic")} /> Gearless
-          </label>
-        </div>
-        <div className="mb-6">
-          <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
-          <label className="flex items-center mb-2 text-sm">
-            <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Petrol")} /> Petrol
-          </label>
-          <label className="flex items-center text-sm">
-            <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Electric")} /> Electric
-          </label>
-        </div>
-        <div className="mb-6">
-          <h4 className="font-semibold mb-2 text-sm text-gray-700">Location</h4>
-          <select
-            className="w-full p-3 border-2 border-gray-300 bg-white text-gray-700 text-sm transition-all duration-300 ease-in-out transform hover:scale-105 focus:ring-2 focus:outline-none"
-            onChange={(e) => updateFilters("location", e.target.value)}
-          >
-            <option value="">All</option>
-            <option value="Hadapsar">Hadapsar</option>
-            <option value="Wakad">Wakad</option>
-            <option value="Kothrud">Kothrud</option>
-          </select>
-        </div>
-        <div className="mb-6">
-          <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By Price</h4>
-          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>
-            Low to High
-          </button>
-          <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
-            High to Low
-          </button>
-        </div>
-      </aside>
+      {showFilters && (
+        <aside className="w-full lg:w-1/4 bg-gray-100 p-4 mb-6 lg:mb-0">
+          <h3 className="text-lg font-bold mb-4 text-gray-900">Filters</h3>
+          <div className="mb-6">
+            <h4 className="font-semibold mb-2 text-sm text-gray-700">Transmission Type</h4>
+            <label className="flex items-center mb-2 text-sm">
+              <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Manual")} /> Gear
+            </label>
+            <label className="flex items-center text-sm">
+              <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Automatic")} /> Gearless
+            </label>
+          </div>
+          <div className="mb-6">
+            <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
+            <label className="flex items-center mb-2 text-sm">
+              <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Petrol")} /> Petrol
+            </label>
+            <label className="flex items-center text-sm">
+              <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Electric")} /> Electric
+            </label>
+          </div>
+          <div className="mb-6">
+            <h4 className="font-semibold mb-2 text-sm text-gray-700">Location</h4>
+            <select
+              className="w-full p-3 border-2 border-gray-300 bg-white text-gray-700 text-sm transition-all duration-300 ease-in-out transform hover:scale-105 focus:ring-2 focus:outline-none"
+              onChange={(e) => updateFilters("location", e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="Hadapsar">Hadapsar</option>
+              <option value="Wakad">Wakad</option>
+              <option value="Kothrud">Kothrud</option>
+            </select>
+          </div>
+          <div className="mb-6">
+            <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By Price</h4>
+            <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>
+              Low to High
+            </button>
+            <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
+              High to Low
+            </button>
+          </div>
+        </aside>
+      )}
 
       {/* Bike Listing */}
       <main className="w-full lg:w-3/4 pl-0 lg:pl-6">
