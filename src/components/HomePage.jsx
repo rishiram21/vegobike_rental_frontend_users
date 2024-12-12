@@ -1,59 +1,85 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
+import { useGlobalState } from "../context/GlobalStateContext";
 
 // Cities list
 const cities = [
-  { name: "Agartala", image: "https://via.placeholder.com/100" },
-  { name: "Agra", image: "https://via.placeholder.com/100" },
-  { name: "Ahmedabad", image: "https://via.placeholder.com/100" },
-  { name: "Amritsar", image: "https://via.placeholder.com/100" },
-  { name: "Bangalore", image: "https://via.placeholder.com/100" },
-  { name: "Bhopal", image: "https://via.placeholder.com/100" },
-  { name: "Bhubaneswar", image: "https://via.placeholder.com/100" },
-  { name: "Bir Billing", image: "https://via.placeholder.com/100" },
-  { name: "Chandigarh", image: "https://via.placeholder.com/100" },
-  { name: "Chennai", image: "https://via.placeholder.com/100" },
-  { name: "Coimbatore", image: "https://via.placeholder.com/100" },
-  { name: "Coorg", image: "https://via.placeholder.com/100" },
+  { name: "Pune", image: "/public/pune.jpg" },
+  { name: "Mumbai", image: "/public/mumbai.jpg" },
+  { name: "Nagpur", image: "/public/nagpur.jpg" },
+  { name: "Rajastan", image: "/public/rajastan.jpg" },
+  { name: "Delhi", image: "/public/delhi.jpg" },
+  { name: "Agra", image: "/public/agra.jpg" },
+  { name: "Banglore", image: "/public/banglore.jpg" },
+  { name: "Indore", image: "/public/indore.jpg" },
+  { name: "Kolhapur", image: "/public/kolhapur.jpg" },
+  { name: "Satara", image: "/public/satara.jpg" },
+  { name: "Gujrat", image: "/public/gujrat.png" },
+  { name: "Nashik", image: "/public/nashik.jpg" },
 ];
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    location: "",
-    startDate: "",
-    endDate: "",
-  });
+
+  // Use global state
+  const { formData, setFormData } = useGlobalState();
+
   const [popupOpen, setPopupOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [errors, setErrors] = useState({});
+  const [selectedCityImage, setSelectedCityImage] = useState("/bikes/okbikesimg.jpg"); // Default image
 
-  // Get current date and time, and set tomorrow's date
-  const currentDate = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(currentDate.getDate() + 1);
+  // Function to format date to "yyyy-MM-ddTHH:mm"
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   useEffect(() => {
-    const currentDateTime = currentDate.toISOString().slice(0, 16); // format to 'yyyy-mm-ddThh:mm'
-    const tomorrowDateTime = tomorrow.toISOString().slice(0, 16); // format to 'yyyy-mm-ddThh:mm'
+    const currentDate = new Date();
+    const tomorrow = new Date(currentDate);
+    tomorrow.setDate(currentDate.getDate() + 1);
 
     setFormData((prevData) => ({
       ...prevData,
-      startDate: currentDateTime,
-      endDate: tomorrowDateTime,
+      startDate: formatDateForInput(currentDate),
+      endDate: formatDateForInput(tomorrow),
     }));
-  }, []);
+  }, [setFormData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prevData) => {
+      if (name === "startDate") {
+        const startDate = new Date(value);
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 1); // Set end date to 1 day after start date
+        return {
+          ...prevData,
+          startDate: value,
+          endDate: formatDateForInput(endDate),
+        };
+      }
+      return { ...prevData, [name]: value };
+    });
+    setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };
 
   const handleSearch = () => {
-    if (formData.location && formData.startDate && formData.endDate) {
-      navigate("/hero");
+    const newErrors = {};
+    if (!formData.location) newErrors.location = "Location is required.";
+    if (!formData.startDate) newErrors.startDate = "Start Date is required.";
+    if (!formData.endDate) newErrors.endDate = "End Date is required.";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
     } else {
-      alert("Please fill in all fields.");
+      navigate("/hero");
     }
   };
 
@@ -67,7 +93,7 @@ const HomePage = () => {
       <div
         className="w-full md:w-1/2 h-full bg-cover bg-center"
         style={{
-          backgroundImage: "url('/bikes/okbikesimg.jpg')",
+          backgroundImage: `url('${selectedCityImage}')`,
         }}
       ></div>
 
@@ -93,16 +119,21 @@ const HomePage = () => {
               placeholder="Enter Location"
               value={formData.location}
               onChange={handleInputChange}
-              onClick={() => setPopupOpen(true)} // Open popup on click
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+              onClick={() => setPopupOpen(true)}
+              className={`w-full px-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.location ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errors.location && (
+              <p className="text-red-500 text-sm mt-1">{errors.location}</p>
+            )}
           </div>
           <div className="mb-4">
             <label
               className="block text-orange-700 font-medium mb-2"
               htmlFor="startDate"
             >
-              Start Date
+              Start Date & Time
             </label>
             <input
               type="datetime-local"
@@ -110,15 +141,20 @@ const HomePage = () => {
               name="startDate"
               value={formData.startDate}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+              className={`w-full px-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.startDate ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errors.startDate && (
+              <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
+            )}
           </div>
           <div className="mb-6">
             <label
               className="block text-orange-700 font-medium mb-2"
               htmlFor="endDate"
             >
-              End Date
+              End Date & Time
             </label>
             <input
               type="datetime-local"
@@ -126,22 +162,27 @@ const HomePage = () => {
               name="endDate"
               value={formData.endDate}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+              className={`w-full px-4 py-2 border rounded-md outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.endDate ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errors.endDate && (
+              <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
+            )}
           </div>
           <button
             onClick={handleSearch}
             className="w-full bg-orange-600 text-white py-2 px-4 rounded-md font-medium hover:bg-orange-700 transition-all duration-300 ease-in-out"
           >
-            Search
+            Done
           </button>
         </div>
       </div>
 
       {/* Popup for City Selection */}
       {popupOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white w-11/12 max-w-4xl p-6 rounded-lg relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 animate-fade-in">
+          <div className="bg-white w-11/12 max-w-4xl p-6 rounded-lg relative animate-slide-down">
             <button
               onClick={() => setPopupOpen(false)}
               className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
@@ -160,10 +201,11 @@ const HomePage = () => {
               {filteredCities.map((city, index) => (
                 <div
                   key={index}
-                  className="flex flex-col items-center cursor-pointer"
+                  className="flex flex-col items-center cursor-pointer transition-transform transform hover:scale-105"
                   onClick={() => {
                     setFormData({ ...formData, location: city.name });
-                    setPopupOpen(false);
+                    setSelectedCityImage(city.image); // Update image based on city selection
+                    setPopupOpen(false); // Close the city popup after selection
                   }}
                 >
                   <img

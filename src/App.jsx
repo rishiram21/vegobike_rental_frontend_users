@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import BikeList from "./components/BikeList";
-import HomePage from "./components/HomePage";
+import HomePage from "./components/HomePage"; // HomePage Component
 import BikeDetailsPage from "./components/BikeDetailsPage"; // Bike Details Page
 import ProfilePage from "./components/ProfilePage"; // Profile Page
 import OrdersPage from "./components/OrdersPage"; // Orders Page
@@ -10,6 +10,8 @@ import { FaWhatsapp } from "react-icons/fa";
 import LoadingPage from "./components/LoadingPage"; // Loading Page
 import Footer from "./components/Footer";
 import CheckoutPage from "./components/CheckoutPage";
+import { GlobalStateProvider } from "./context/GlobalStateContext";
+// import ProjectInfoPage from "./components/ProjectInfoPage"; // Commented out as no longer needed
 
 // Wrapper to conditionally render the Navbar
 const ConditionalNavbar = ({ children }) => {
@@ -56,43 +58,46 @@ const App = () => {
   }, []);
 
   return (
-    <Router>
-      {isLoading ? (
-        // Show the loading page while loading
-        <LoadingPage />
-      ) : (
-        <ConditionalNavbar>
-          <Routes>
-            {/* Home Page Route */}
-            <Route path="/" element={<HomePage />} />
+    <GlobalStateProvider> {/* Wrap the entire app with GlobalStateProvider */}
+      <Router>
+        {isLoading ? (
+          // Show the loading page while loading
+          <LoadingPage />
+        ) : (
+          <ConditionalNavbar>
+            <Routes>
+              {/* Default Route - HomePage will be shown at root "/" */}
+              <Route path="/" element={<HomePage />} />
 
-            {/* Hero Page Route */}
-            <Route
-              path="/hero"
-              element={
-                <>
-                  <BikeList />
-                </>
-              }
-            />
+              {/* Hero Page Route */}
+              <Route
+                path="/hero"
+                element={
+                  <>
+                    <BikeList />
+                  </>
+                }
+              />
 
-            {/* Bike Details Page Route */}
-            <Route path="/bike-details" element={<BikeDetailsPage />} />
+              {/* Bike Details Page Route */}
+              <Route path="/bike-details" element={<BikeDetailsPage />} />
 
-            {/* Profile Page Route */}
-            <Route path="/profile" element={<ProfilePage />} />
+              {/* Profile Page Route */}
+              <Route path="/profile" element={<ProfilePage />} />
 
-            {/* Orders Page Route */}
-            <Route path="/orders" element={<OrdersPage />} />
+              {/* Orders Page Route */}
+              <Route path="/orders" element={<OrdersPage />} />
 
-            <Route path="/checkout" element={<CheckoutPage />} />
-          </Routes>
-          {/* Floating WhatsApp Icon */}
-          <WhatsAppIcon />
-          <Footer/>
-        </ConditionalNavbar>
-      )}
-    </Router>
+              {/* Checkout Page Route */}
+              <Route path="/checkout" element={<CheckoutPage />} />
+            </Routes>
+            {/* Floating WhatsApp Icon */}
+            <WhatsAppIcon />
+            <Footer />
+          </ConditionalNavbar>
+        )}
+      </Router>
+    </GlobalStateProvider>
   );
 };
 

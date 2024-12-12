@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { GoogleMap, LoadScript, Marker, Autocomplete } from "@react-google-maps/api";
 
 const BikeDetailsPage = () => {
   const location = useLocation();
@@ -13,6 +13,9 @@ const BikeDetailsPage = () => {
   const [showPolicy, setShowPolicy] = useState(false);
   const [deliveryLocation, setDeliveryLocation] = useState("");
   const [selectedPosition, setSelectedPosition] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const [autocomplete, setAutocomplete] = useState(null);
 
   // Package prices logic with discounts
   const basePricePerDay = bike.basePrice || 0;
@@ -85,15 +88,26 @@ const BikeDetailsPage = () => {
     setDeliveryLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
   };
 
+  const onLoadAutocomplete = (autocompleteInstance) => {
+    setAutocomplete(autocompleteInstance);
+  };
+
+  const onPlaceChanged = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      setDeliveryLocation(place.formatted_address || "");
+    }
+  };
+
   return (
     <div className="container mx-auto py-12 px-4 lg:px-6 animate-fade-in">
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Left: Bike Image */}
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col shadow border items-center">
           <img
             src={bike.img || "/placeholder-image.jpg"}
             alt={bike.name || "Bike Image"}
-            className="w-full h-auto shadow-lg object-cover transform hover:scale-105 transition duration-300"
+            className="w-full h-auto object-cover transform "
           />
           <p className="mt-3 text-gray-500 text-xs italic">
             *Images are for representation purposes only.
@@ -101,26 +115,47 @@ const BikeDetailsPage = () => {
         </div>
 
         {/* Right: Bike Details */}
-        <div className="bg-white shadow-lg p-4 space-y-4">
+        <div className="bg-white p-4 space-y-4">
           <h2 className="text-2xl font-semibold text-gray-800">{bike.name || "Bike Name"}</h2>
 
           {/* Rental Packages */}
-          <div className="space-y-3">
+          <div className="space-y-3 relative">
             <h3 className="text-base font-semibold text-gray-700">Rental Packages</h3>
-            <div className="flex flex-wrap items-center gap-3">
-              {Object.keys(packagePrices).map((pkg) => (
-                <button
-                  key={pkg}
-                  onClick={() => handlePackageSelection(pkg)}
-                  className={`py-2 px-4 border text-xs sm:text-sm transition-all duration-300 w-full sm:w-auto ${
-                    selectedPackage === pkg
-                      ? "bg-orange-300 text-black border-orange-300"
-                      : "bg-white text-black border-orange-300"
-                  }`}
-                >
-                  {pkg} ({pkg === "Per Day" ? `₹${basePricePerDay}/day` : `₹${Math.round(packagePrices[pkg])}`})
-                </button>
-              ))}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className={`py-2 px-4 border text-sm w-full sm:w-auto text-left transition-all duration-300 ${
+                  dropdownOpen ? "bg-orange-300 text-black border-orange-300" : "bg-white text-black border-orange-300"
+                }`}
+              >
+                {selectedPackage} ({
+                  selectedPackage === "Per Day"
+                    ? `₹${basePricePerDay}/day`
+                    : `₹${Math.round(packagePrices[selectedPackage])}`
+                })
+              </button>
+              {dropdownOpen && (
+                <div className="absolute z-10 mt-2 bg-white border border-gray-300 shadow-lg rounded w-full">
+                  {Object.keys(packagePrices).map((pkg) => (
+                    <button
+                      key={pkg}
+                      onClick={() => {
+                        handlePackageSelection(pkg);
+                        setDropdownOpen(false);
+                      }}
+                      className={`block w-full text-left py-2 px-4 hover:bg-orange-100 text-sm transition-all duration-300 ${
+                        selectedPackage === pkg ? "bg-orange-300 text-black" : "text-gray-800"
+                      }`}
+                    >
+                      {pkg} ({
+                        pkg === "Per Day"
+                          ? `₹${basePricePerDay}/day`
+                          : `₹${Math.round(packagePrices[pkg])}`
+                      })
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             {discountAmount > 0 && (
               <p className="mt-1 text-green-600 text-xs">
@@ -174,69 +209,81 @@ const BikeDetailsPage = () => {
                     : "bg-white text-black border-orange-300"
                 } transition-all duration-300 w-full sm:w-auto`}
               >
-                Delivery at Location (+₹250)
+                Delivery at Location
               </button>
             </div>
-            {pickupOption === "Delivery at Location" && (
-              <>
-                <p className="mt-2 text-xs text-gray-600">Click on the map to select a delivery location:</p>
-                <LoadScript googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY">
-                  <GoogleMap mapContainerStyle={mapContainerStyle}
-                    center={center}
-                    zoom={12}
-                    onClick={handleMapClick}
-                  >
-                    {selectedPosition && <Marker position={selectedPosition} />}
-                  </GoogleMap>
-                </LoadScript>
-                <p className="mt-1 text-xs text-gray-600">
-                  Selected Location: {deliveryLocation || "None"}
-                </p>
-              </>
-            )}
           </div>
 
-          {/* Total Price and Checkout */}
+          {pickupOption === "Delivery at Location" && (
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-gray-700">Delivery Location</h3>
+              <LoadScript googleMapsApiKey="AIzaSyDLNzkSKuszYtoe2U84Uvp7J27Hehg1pd4" libraries={["places"]}>
+                <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
+                  <input
+                    type="text"
+                    placeholder="Enter delivery location"
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                  />
+                </Autocomplete>
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={center}
+                  zoom={12}
+                  onClick={handleMapClick}
+                >
+                  {selectedPosition && <Marker position={selectedPosition} />}
+                </GoogleMap>
+              </LoadScript>
+              {deliveryLocation && (
+                <p className="text-xs text-gray-600 mt-1">Selected Location: {deliveryLocation}</p>
+              )}
+              <p className="text-xs text-gray-600 mt-1">
+                Delivery Charge: ₹{deliveryCharge}
+              </p>
+            </div>
+          )}
+
+          {/* Breakdown of Amounts */}
           <div className="space-y-3">
-            <h3 className="text-base font-semibold text-gray-700">Price Breakdown</h3>
+            <h3 className="text-base font-semibold text-gray-700">Amount Breakdown</h3>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>Rent: ₹{rentAmount}</li>
+              <li>Rental Amount: ₹{rentAmount}</li>
               <li>Deposit: ₹{depositAmount}</li>
-              {deliveryCharge > 0 && <li>Delivery Charge: ₹{deliveryCharge}</li>}
-              <li className="font-semibold">Total: ₹{totalPrice}</li>
+              {pickupOption === "Delivery at Location" && <li>Delivery Charge: ₹{deliveryCharge}</li>}
             </ul>
-            <button
-              onClick={handleProceedToCheckout}
-              className="py-3 px-6 bg-orange-400 text-white text-sm w-full font-semibold rounded shadow hover:bg-orange-500 transition-all duration-300"
-            >
-              Proceed to Checkout
-            </button>
-
-
           </div>
 
-          
-
-          {/* Policy Toggle */}
+          {/* Terms and Conditions */}
           <div className="space-y-3">
-            <h3 className="text-base font-semibold text-gray-700">Rental Policy</h3>
             <button
               onClick={() => setShowPolicy(!showPolicy)}
-              className="py-2 px-4 border-2 text-sm w-full text-orange-300 border-orange-300 bg-white transition-all duration-300"
+              className="text-sm text-orange-500 underline flex items-center"
             >
-              {showPolicy ? "Hide Policy" : "View Policy"}
+              {showPolicy ? "Hide Terms and Conditions" : "Show Terms and Conditions"}
+              <span className="ml-2">{showPolicy ? "▼" : "▶"}</span>
             </button>
             {showPolicy && (
-              <div className="text-sm text-gray-600 border border-gray-200 rounded p-3 mt-2">
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Valid ID proof is required for booking.</li>
-                  <li>Security deposit is refundable upon return.</li>
-                  <li>Fuel charges are not included in the rental price.</li>
-                  <li>Additional late return charges may apply.</li>
-                </ul>
+              <div className="p-4 border rounded-md bg-gray-100 text-xs text-gray-700">
+                <p>1. The bike must be returned in good condition.</p>
+                <p>2. Late returns will incur additional
+ charges.</p>
+                <p>3. Please carry a valid ID proof while picking up the bike.</p>
               </div>
             )}
           </div>
+
+          {/* Total Price */}
+          <div className="mt-4">
+            <h3 className="text-lg font-bold text-gray-800">Total Price: ₹{totalPrice}</h3>
+          </div>
+
+          {/* Proceed to Checkout Button */}
+          <button
+            onClick={handleProceedToCheckout}
+            className="w-full py-3 bg-orange-400 text-white font-semibold text-sm rounded hover:bg-orange-500 transition-all duration-300"
+          >
+            Proceed to Checkout
+          </button>
         </div>
       </div>
     </div>

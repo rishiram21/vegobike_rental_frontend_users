@@ -8,6 +8,12 @@ const bikes = [
   { id: 3, name: "TVS Jupiter", basePrice: 299, img: "/bikes/jupiter.jpg", type: "Automatic", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2020, locations: ["Kothrud", "Hadapsar"] },
   { id: 4, name: "Royal Enfield Classic 350", basePrice: 999, img: "/bikes/activa.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2017, locations: ["Wakad"] },
   { id: 5, name: "Bajaj Pulsar 150", basePrice: 499, img: "/bikes/pulsar.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2021, locations: ["Kothrud", "Hadapsar"] },
+  { id: 6, name: "Honda CB Unicorn 150", basePrice: 599, img: "/bikes/splender.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2018, locations: ["Hadapsar", "Wakad"] },
+  { id: 7, name: "Honda Activa 5G", basePrice: 399, img: "/bikes/activai.jpg", type: "Automatic", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2019, locations: ["Wakad", "Kothrud"] },
+  { id: 8, name: "TVS Jupiter", basePrice: 299, img: "/bikes/jupiter.jpg", type: "Automatic", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2020, locations: ["Kothrud", "Hadapsar"] },
+  { id: 9, name: "Royal Enfield Classic 350", basePrice: 999, img: "/bikes/activa.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2017, locations: ["Wakad"] },
+  { id: 10, name: "Bajaj Pulsar 150", basePrice: 499, img: "/bikes/pulsar.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2021, locations: ["Kothrud", "Hadapsar"] },
+
 ];
 
 const BikeList = () => {
@@ -80,10 +86,10 @@ const BikeList = () => {
         </div>
         <div className="mb-6">
           <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By Price</h4>
-          <button className="block w-full mb-2 p-2 bg-orange-300 text-white" onClick={() => sortBikes("asc")}>
+          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>
             Low to High
           </button>
-          <button className="block w-full p-2 bg-orange-300 text-white" onClick={() => sortBikes("desc")}>
+          <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
             High to Low
           </button>
         </div>
@@ -93,8 +99,8 @@ const BikeList = () => {
       <main className="w-full lg:w-3/4 pl-0 lg:pl-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredBikes.map((bike) => (
-            <div key={bike.id} className="bg-white border p-4 shadow-md hover:shadow-xl transition-shadow">
-              <img src={bike.img} alt={bike.name} className="w-full h-40 object-cover rounded-t-lg" />
+            <div key={bike.id} className="bg-white border p-4 shadow">
+              <img src={bike.img} alt={bike.name} className="w-full h-40 object-cover" />
               <h3 className="text-base font-medium mt-2 truncate">{bike.name}</h3>
               <p className="text-xs text-gray-600 mt-1">Year: {bike.makeYear}</p>
               
