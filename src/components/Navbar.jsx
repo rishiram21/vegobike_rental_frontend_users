@@ -27,14 +27,23 @@ const Navbar = () => {
           <Link to="/" className="text-2xl font-bold text-white">
             OKBikes
           </Link>
-
-          {/* Mobile Hamburger Icon for Sidebar */}
-          <div className="md:hidden">
-            <FaBars
-              onClick={toggleSidebar}
-              className="text-white text-2xl cursor-pointer"
-            />
+          <div className="hidden md:flex text-sm text-white items-center ml-4">
+            <FaMapMarkerAlt className="mr-2 text-white" />
+            <Link to="/" className="hover:underline">
+              {formData.location || "Select Location"}
+            </Link>
           </div>
+        </div>
+
+        {/* Hamburger Button for Mobile View (Positioned on the top-right) */}
+        <div className="md:hidden flex items-center absolute right-4 top-0">
+          <button
+            onClick={toggleSidebar}
+            className="text-white text-3xl"
+            aria-label="Open Sidebar"
+          >
+            <FaBars />
+          </button>
         </div>
 
         {/* Date and Time Inputs (Centered on mobile) */}
@@ -45,7 +54,7 @@ const Navbar = () => {
               <AiOutlineCalendar className="absolute left-3 text-white" />
               <input
                 type="datetime-local"
-                className="pl-10 pr-3 py-2 border rounded-md text-sm w-full md:w-auto bg-white text-black"
+                className="pl-10 pr-3 py-2 border text-sm w-full md:w-auto bg-white text-black"
                 value={formData.startDate}
                 name="startDate"
                 onChange={handleDateChange}
@@ -58,7 +67,7 @@ const Navbar = () => {
               <AiOutlineCalendar className="absolute left-3 text-white" />
               <input
                 type="datetime-local"
-                className="pl-10 pr-3 py-2 border rounded-md text-sm w-full md:w-auto bg-white text-black"
+                className="pl-10 pr-3 py-2 border text-sm w-full md:w-auto bg-white text-black"
                 value={formData.endDate}
                 name="endDate"
                 onChange={handleDateChange}
@@ -81,7 +90,7 @@ const Navbar = () => {
               <FaUser className="mr-1" />
               <FaCaretDown className="ml-2" />
             </Menu.Button>
-            <Menu.Items className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2">
+            <Menu.Items className="absolute right-0 mt-2 w-48 bg-white shadow-lg  py-2">
               <Menu.Item>
                 {({ active }) => (
                   <Link
