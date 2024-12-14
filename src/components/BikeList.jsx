@@ -45,6 +45,7 @@ const BikeList = () => {
     if (filters.location) result = result.filter((bike) => bike.locations.includes(filters.location));
     if (order === "asc") result = result.sort((a, b) => a.basePrice - b.basePrice);
     if (order === "desc") result = result.sort((a, b) => b.basePrice - a.basePrice);
+    if (order === "relevance") result = result.sort((a, b) => b.makeYear - a.makeYear);
     setFilteredBikes(result);
   };
 
@@ -92,8 +93,11 @@ const BikeList = () => {
           <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>
             Low to High
           </button>
-          <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
+          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
             High to Low
+          </button>
+          <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("relevance")}>
+            Relevance
           </button>
         </div>
       </aside>
@@ -127,7 +131,10 @@ const BikeList = () => {
               </select>
 
               <p className="text-sm font-semibold mt-3">Price: ₹{bike.basePrice} / day</p>
-              <p className="text-xs text-gray-600 mt-1">Fuel excluded, No distance limit</p>
+              <ul className="list-disc pl-5 text-xs text-gray-600 mt-1">
+                <li>Fuel excluded</li>
+                <li>No distance limit</li>
+              </ul>
               <button
                 className="mt-3 w-full bg-orange-500 text-white py-1 px-2 hover:bg-orange-600 transition-colors"
                 onClick={() => navigate(`/bike-details`, { state: bike })}

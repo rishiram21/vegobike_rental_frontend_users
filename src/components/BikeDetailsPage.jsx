@@ -20,7 +20,7 @@ const BikeDetailsPage = () => {
   // Package prices logic with discounts
   const basePricePerDay = bike.basePrice || 0;
   const packagePrices = {
-    "Per Day": rentalDays * basePricePerDay,
+    "Per Day(": rentalDays * basePricePerDay,
     "7 Days": basePricePerDay * 7 * 0.9, // 10% discount
     "15 Days": basePricePerDay * 15 * 0.85, // 15% discount
     "30 Days": basePricePerDay * 30 * 0.8, // 20% discount
@@ -103,11 +103,11 @@ const BikeDetailsPage = () => {
     <div className="container mx-auto py-12 px-4 lg:px-6 animate-fade-in">
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Left: Bike Image */}
-        <div className="flex flex-col shadow border items-center">
+        <div className="flex flex-col shadow border items-center rounded-lg overflow-hidden">
           <img
             src={bike.img || "/placeholder-image.jpg"}
             alt={bike.name || "Bike Image"}
-            className="w-full h-auto object-cover transform "
+            className="w-full h-auto object-cover"
           />
           <p className="mt-3 text-gray-500 text-xs italic">
             *Images are for representation purposes only.
@@ -115,24 +115,21 @@ const BikeDetailsPage = () => {
         </div>
 
         {/* Right: Bike Details */}
-        <div className="bg-white p-4 space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">{bike.name || "Bike Name"}</h2>
+        <div className="bg-white p-6 rounded-lg shadow-lg space-y-6">
+          <h2 className="text-2xl font-bold text-gray-800">{bike.name || "Bike Name"}</h2>
 
           {/* Rental Packages */}
-          <div className="space-y-3 relative">
-            <h3 className="text-base font-semibold text-gray-700">Rental Packages</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">Rental Packages</h3>
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className={`py-2 px-4 border text-sm w-full sm:w-auto text-left transition-all duration-300 ${
+                className={`py-2 px-4 border w-full flex justify-between items-center rounded transition-all duration-300 ${
                   dropdownOpen ? "bg-orange-300 text-black border-orange-300" : "bg-white text-black border-orange-300"
                 }`}
               >
-                {selectedPackage} ({
-                  selectedPackage === "Per Day"
-                    ? `₹${basePricePerDay}/day`
-                    : `₹${Math.round(packagePrices[selectedPackage])}`
-                })
+                <span>{selectedPackage}</span>
+                <span className="ml-2">⬇</span>
               </button>
               {dropdownOpen && (
                 <div className="absolute z-10 mt-2 bg-white border border-gray-300 shadow-lg rounded w-full">
@@ -158,56 +155,56 @@ const BikeDetailsPage = () => {
               )}
             </div>
             {discountAmount > 0 && (
-              <p className="mt-1 text-green-600 text-xs">
+              <p className="mt-1 text-green-600 text-sm">
                 You saved ₹{discountAmount} on this package!
               </p>
             )}
           </div>
 
           {/* Rental Duration */}
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold text-gray-700">Rental Duration</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">Rental Duration</h3>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleDecreaseDays}
-                className="px-3 py-2 bg-gray-200 text-gray-800 text-xs sm:text-sm"
+                className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-sm"
               >
                 -
               </button>
               <span className="text-lg font-bold">{rentalDays} Days</span>
               <button
                 onClick={handleIncreaseDays}
-                className="px-3 py-2 bg-gray-200 text-gray-800 text-xs sm:text-sm"
+                className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-sm"
               >
                 +
               </button>
             </div>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-sm text-gray-600">
               Rental for {rentalDays} days: ₹{rentAmount}
             </p>
           </div>
 
           {/* Pickup Options */}
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold text-gray-700">Pickup Option</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">Pickup Option</h3>
             <div className="flex gap-3">
               <button
                 onClick={() => setPickupOption("Self Pickup")}
-                className={`py-2 px-4 border-2 text-xs sm:text-sm ${
+                className={`py-2 px-4 border-2 rounded text-sm transition-all duration-300 ${
                   pickupOption === "Self Pickup"
                     ? "bg-orange-300 text-black border-orange-300"
                     : "bg-white text-black border-orange-300"
-                } transition-all duration-300 w-full sm:w-auto`}
+                }`}
               >
                 Self Pickup
               </button>
               <button
                 onClick={() => setPickupOption("Delivery at Location")}
-                className={`py-2 px-4 border-2 text-xs sm:text-sm ${
+                className={`py-2 px-4 border-2 rounded text-sm transition-all duration-300 ${
                   pickupOption === "Delivery at Location"
                     ? "bg-orange-300 text-black border-orange-300"
                     : "bg-white text-black border-orange-300"
-                } transition-all duration-300 w-full sm:w-auto`}
+                }`}
               >
                 Delivery at Location
               </button>
@@ -215,8 +212,8 @@ const BikeDetailsPage = () => {
           </div>
 
           {pickupOption === "Delivery at Location" && (
-            <div className="space-y-3">
-              <h3 className="text-base font-semibold text-gray-700">Delivery Location</h3>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">Delivery Location</h3>
               <LoadScript googleMapsApiKey="AIzaSyDLNzkSKuszYtoe2U84Uvp7J27Hehg1pd4" libraries={["places"]}>
                 <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
                   <input
@@ -235,17 +232,15 @@ const BikeDetailsPage = () => {
                 </GoogleMap>
               </LoadScript>
               {deliveryLocation && (
-                <p className="text-xs text-gray-600 mt-1">Selected Location: {deliveryLocation}</p>
+                <p className="text-sm text-gray-600">Selected Location: {deliveryLocation}</p>
               )}
-              <p className="text-xs text-gray-600 mt-1">
-                Delivery Charge: ₹{deliveryCharge}
-              </p>
+              <p className="text-sm text-gray-600">Delivery Charge: ₹{deliveryCharge}</p>
             </div>
           )}
 
           {/* Breakdown of Amounts */}
-          <div className="space-y-3">
-            <h3 className="text-base font-semibold text-gray-700">Amount Breakdown</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">Amount Breakdown</h3>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>Rental Amount: ₹{rentAmount}</li>
               <li>Deposit: ₹{depositAmount}</li>
@@ -254,7 +249,7 @@ const BikeDetailsPage = () => {
           </div>
 
           {/* Terms and Conditions */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <button
               onClick={() => setShowPolicy(!showPolicy)}
               className="text-sm text-orange-500 underline flex items-center"
@@ -263,10 +258,9 @@ const BikeDetailsPage = () => {
               <span className="ml-2">{showPolicy ? "▼" : "▶"}</span>
             </button>
             {showPolicy && (
-              <div className="p-4 border rounded-md bg-gray-100 text-xs text-gray-700">
+              <div className="p-4 border rounded-md bg-gray-100 text-sm text-gray-700">
                 <p>1. The bike must be returned in good condition.</p>
-                <p>2. Late returns will incur additional
- charges.</p>
+                <p>2. Late returns will incur additional charges.</p>
                 <p>3. Please carry a valid ID proof while picking up the bike.</p>
               </div>
             )}
@@ -280,7 +274,7 @@ const BikeDetailsPage = () => {
           {/* Proceed to Checkout Button */}
           <button
             onClick={handleProceedToCheckout}
-            className="w-full py-3 bg-orange-400 text-white font-semibold text-sm rounded hover:bg-orange-500 transition-all duration-300"
+            className="w-full py-3 bg-orange-400 text-white font-semibold rounded hover:bg-orange-500 transition-all duration-300"
           >
             Proceed to Checkout
           </button>
