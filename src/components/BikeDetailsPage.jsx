@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GoogleMap, LoadScript, Marker, Autocomplete } from "@react-google-maps/api";
+import { FaMapMarkerAlt, FaCalendarAlt, FaTags, FaMoneyBillWave, FaInfoCircle } from "react-icons/fa";
+import { AiOutlinePlus, AiOutlineMinus, AiOutlineCaretDown, AiOutlineCaretUp } from "react-icons/ai";
 
 const BikeDetailsPage = () => {
   const location = useLocation();
@@ -17,10 +19,12 @@ const BikeDetailsPage = () => {
 
   const [autocomplete, setAutocomplete] = useState(null);
 
+  // Fallback to default price if bike.basePrice is undefined
+  const basePricePerDay = bike.basePrice && !isNaN(bike.basePrice) ? bike.basePrice : 0;
+
   // Package prices logic with discounts
-  const basePricePerDay = bike.basePrice || 0;
   const packagePrices = {
-    "Per Day(": rentalDays * basePricePerDay,
+    "Per Day": rentalDays * basePricePerDay,
     "7 Days": basePricePerDay * 7 * 0.9, // 10% discount
     "15 Days": basePricePerDay * 15 * 0.85, // 15% discount
     "30 Days": basePricePerDay * 30 * 0.8, // 20% discount
@@ -116,20 +120,32 @@ const BikeDetailsPage = () => {
 
         {/* Right: Bike Details */}
         <div className="bg-white p-6 rounded-lg shadow-lg space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">{bike.name || "Bike Name"}</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            {/* <FaInfoCircle className="inline mr-2 text-orange-400" /> */}
+            {bike.name || "Bike Name"}
+          </h2>
 
           {/* Rental Packages */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700">Rental Packages</h3>
+            <h3 className="text-lg font-semibold text-gray-700">
+              <FaTags className="inline mr-2 text-orange-400" />
+               Rental Packages
+            </h3>
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className={`py-2 px-4 border w-full flex justify-between items-center rounded transition-all duration-300 ${
-                  dropdownOpen ? "bg-orange-300 text-black border-orange-300" : "bg-white text-black border-orange-300"
+                  dropdownOpen
+                    ? "bg-orange-300 text-black border-orange-300"
+                    : "bg-white text-black border-orange-300"
                 }`}
               >
                 <span>{selectedPackage}</span>
-                <span className="ml-2">⬇</span>
+                {dropdownOpen ? (
+                  <AiOutlineCaretUp className="ml-2" />
+                ) : (
+                  <AiOutlineCaretDown className="ml-2" />
+                )}
               </button>
               {dropdownOpen && (
                 <div className="absolute z-10 mt-2 bg-white border border-gray-300 shadow-lg rounded w-full">
@@ -144,11 +160,7 @@ const BikeDetailsPage = () => {
                         selectedPackage === pkg ? "bg-orange-300 text-black" : "text-gray-800"
                       }`}
                     >
-                      {pkg} ({
-                        pkg === "Per Day"
-                          ? `₹${basePricePerDay}/day`
-                          : `₹${Math.round(packagePrices[pkg])}`
-                      })
+                      {pkg} ( {pkg === "Per Day" ? `₹${basePricePerDay}/day` : `₹${Math.round(packagePrices[pkg])}`} )
                     </button>
                   ))}
                 </div>
@@ -163,30 +175,32 @@ const BikeDetailsPage = () => {
 
           {/* Rental Duration */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700">Rental Duration</h3>
+            <h3 className="text-lg font-semibold text-gray-700">
+              <FaCalendarAlt className="inline mr-2 text-orange-400" /> Rental Duration
+            </h3>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleDecreaseDays}
                 className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-sm"
               >
-                -
+                <AiOutlineMinus />
               </button>
               <span className="text-lg font-bold">{rentalDays} Days</span>
               <button
                 onClick={handleIncreaseDays}
                 className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-sm"
               >
-                +
+                <AiOutlinePlus />
               </button>
             </div>
-            <p className="text-sm text-gray-600">
-              Rental for {rentalDays} days: ₹{rentAmount}
-            </p>
+            <p className="text-sm text-gray-600">Rental for {rentalDays} days: ₹{rentAmount}</p>
           </div>
 
           {/* Pickup Options */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700">Pickup Option</h3>
+            <h3 className="text-lg font-semibold text-gray-700">
+              <FaMapMarkerAlt className="inline mr-2 text-orange-400" /> Pickup Option
+            </h3>
             <div className="flex gap-3">
               <button
                 onClick={() => setPickupOption("Self Pickup")}
@@ -213,7 +227,9 @@ const BikeDetailsPage = () => {
 
           {pickupOption === "Delivery at Location" && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700">Delivery Location</h3>
+              <h3 className="text-lg font-semibold text-gray-700">
+                <FaMapMarkerAlt className="inline mr-2 text-orange-400" /> Delivery Location
+              </h3>
               <LoadScript googleMapsApiKey="AIzaSyDLNzkSKuszYtoe2U84Uvp7J27Hehg1pd4" libraries={["places"]}>
                 <Autocomplete onLoad={onLoadAutocomplete} onPlaceChanged={onPlaceChanged}>
                   <input
@@ -240,7 +256,10 @@ const BikeDetailsPage = () => {
 
           {/* Breakdown of Amounts */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700">Amount Breakdown</h3>
+            <h3 className="text-lg font-semibold text-gray-700">
+              {/* <FaMoneyBillWave className="inline mr-2 text-orange-400" />  */}
+              Amount Breakdown
+            </h3>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>Rental Amount: ₹{rentAmount}</li>
               <li>Deposit: ₹{depositAmount}</li>
@@ -255,9 +274,10 @@ const BikeDetailsPage = () => {
               className="text-sm text-orange-500 underline flex items-center"
             >
               {showPolicy ? "Hide Terms and Conditions" : "Show Terms and Conditions"}
-              <span className="ml-2">{showPolicy ? "▼" : "▶"}</span>
+              <span className="ml-2">{showPolicy ? <AiOutlineCaretUp /> : <AiOutlineCaretDown />}</span>
             </button>
-            {showPolicy && (
+            {
+                showPolicy && (
               <div className="p-4 border rounded-md bg-gray-100 text-sm text-gray-700">
                 <p>1. The bike must be returned in good condition.</p>
                 <p>2. Late returns will incur additional charges.</p>

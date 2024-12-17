@@ -1,20 +1,28 @@
+// src/components/CheckoutPage.jsx
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useGlobalState } from "../context/GlobalStateContext";
+import { FaRegCalendarAlt, FaClock, FaMapMarkerAlt, FaClipboardCheck } from "react-icons/fa"; // Icons from react-icons
+import { motion } from "framer-motion"; // Animation library
 
 const CheckoutPage = () => {
   const location = useLocation();
-  const { bike, totalPrice, rentalDays, selectedPackage, deliveryLocation } = location.state || {};
+  const navigate = useNavigate(); // Initialize the navigate function
+  const { bike, totalPrice, rentalDays, selectedPackage, deliveryLocation, pickupDate, dropDate } = location.state || {};
+  const { addOrder } = useGlobalState();
 
   const [couponCode, setCouponCode] = useState("");
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false); // Track payment status
+  const [paymentError, setPaymentError] = useState(false); // Track payment failure
 
   // Coupon codes and their discounts
   const coupons = {
-    SAVE10: 10, // 10% discount
-    RENT20: 20, // 20% discount
+    SAVE10: 10,
+    RENT20: 20,
   };
 
   const depositAmount = bike?.deposit || 0;
@@ -58,14 +66,22 @@ const CheckoutPage = () => {
       currency: "INR",
       name: "Bike Rental Service",
       description: "Payment for Bike Rental",
-      image: "/path/to/logo.png", // Replace with the path to your logo
+      image: "/path/to/logo.png",
       handler: function (response) {
-        alert("Payment Successful! Payment ID: " + response.razorpay_payment_id);
+        setPaymentSuccess(true); // Payment successful
+        addOrder({
+          bike: bike.name,
+          rentalDays,
+          totalPrice: payableAmount,
+          orderDate: new Date().toLocaleDateString(),
+          status: "Active",
+        });
+        navigate("/orders"); // Redirect to the orders page after successful payment
       },
       prefill: {
-        name: "Customer Name", // Replace with customer name or dynamically fetch
-        email: "customer@example.com", // Replace with customer email
-        contact: "+91XXXXXXXXXX", // Replace with customer contact number
+        name: "Customer Name",
+        email: "customer@example.com",
+        contact: "+91XXXXXXXXXX",
       },
       theme: {
         color: "#FF6A00",
@@ -74,19 +90,24 @@ const CheckoutPage = () => {
 
     const rzp1 = new window.Razorpay(options);
     rzp1.on("payment.failed", function (response) {
-      alert("Payment Failed! Error: " + response.error.description);
+      setPaymentError(true); // Payment failed
     });
 
     rzp1.open();
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <motion.div
+      className="flex flex-col min-h-screen bg-gray-100"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="container mx-auto py-8 px-4 lg:px-8 flex-grow">
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Section: Bike and Summary */}
           <div className="lg:col-span-2 bg-white shadow-lg rounded-lg p-6 space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-800">Summary</h2>
-
+            <h2 className="text-2xl font-semibold text-gray-800">Rental Summary</h2>
             <div className="flex items-center space-x-4">
               <img
                 src={bike?.img || "/placeholder-image.jpg"}
@@ -101,41 +122,39 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            <div className="mt-6">
+            {/* Pickup and Drop Date/Time */}
+            <div className="mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">Pickup and Drop Date/Time</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Pickup Date:</span>
-                  <span>{new Date().toLocaleDateString()}</span>
+              <div className="flex items-center space-x-2">
+                <FaRegCalendarAlt className="text-orange-500" />
+                <div>
+                  <p className="text-sm text-gray-600">Pickup Date: {pickupDate ? new Date(pickupDate).toLocaleDateString() : "N/A"}</p>
+                  <p className="text-sm text-gray-600">Drop Date: {dropDate ? new Date(dropDate).toLocaleDateString() : "N/A"}</p>
                 </div>
-                <div className="flex justify-between">
-                  <span>Pickup Time:</span>
-                  <span>10:00 AM</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Drop Date:</span>
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Drop Time:</span>
-                  <span>6:00 PM</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <FaClock className="text-orange-500" />
+                <div>
+                  <p className="text-sm text-gray-600">Pickup Time: 10:00 AM</p>
+                  <p className="text-sm text-gray-600">Drop Time: 6:00 PM</p>
                 </div>
               </div>
             </div>
 
-            <div>
+            {/* Location */}
+            <div className="mt-6">
               <h3 className="text-lg font-semibold text-gray-700">Pickup and Drop Location</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                {deliveryLocation ? `Delivery Location: ${deliveryLocation}` : "Pickup: Self Pickup"}
-              </p>
+              <div className="flex items-center space-x-2">
+                <FaMapMarkerAlt className="text-orange-500" />
+                <p className="text-sm text-gray-600">
+                  {deliveryLocation ? `Delivery Location: ${deliveryLocation}` : "Pickup: Self Pickup"}
+                </p>
+              </div>
             </div>
 
+            {/* Terms and Conditions */}
             <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-700">Reminder</h3>
-              <p className="text-sm text-gray-600 mt-2">
-                Please ensure to carry a valid ID proof while picking up the bike.
-              </p>
-              <h3 className="text-lg font-semibold text-gray-700 mt-6">Terms and Conditions</h3>
+              <h3 className="text-lg font-semibold text-gray-700">Terms and Conditions</h3>
               <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
                 <li>A valid government-issued ID is required at pickup.</li>
                 <li>Renter is responsible for fuel costs.</li>
@@ -145,6 +164,7 @@ const CheckoutPage = () => {
             </div>
           </div>
 
+          {/* Right Section: Coupon, Amount Breakdown, and Payment */}
           <div className="bg-white shadow-lg rounded-lg p-6 space-y-6">
             <h3 className="text-lg font-semibold text-gray-700">Apply Coupon</h3>
             {!showCouponInput ? (
@@ -180,6 +200,7 @@ const CheckoutPage = () => {
               </div>
             )}
 
+            {/* Amount Breakdown */}
             <div>
               <h3 className="text-lg font-semibold text-gray-700">Amount Breakdown</h3>
               <div className="space-y-2 text-sm">
@@ -200,39 +221,61 @@ const CheckoutPage = () => {
                   <span>-₹{discount}</span>
                 </div>
                 <div className="flex justify-between font-semibold">
-                  <span>Total Payable Amount:</span>
+                  <span>Total Payable:</span>
                   <span>₹{payableAmount}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <label className="text-sm text-gray-600">
-                I have read and accept the terms and conditions
-              </label>
+            {/* Terms and Conditions */}
+            <div className="mt-6 flex justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={() => setTermsAccepted(!termsAccepted)}
+                  className="h-4 w-4"
+                />
+                <label className="text-sm">I accept the terms and conditions</label>
+              </div>
+
+              <button
+                onClick={handlePayment}
+                className={`${
+                  !termsAccepted || payableAmount <= 0
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-orange-500 hover:bg-orange-600"
+                } text-white py-2 px-4 rounded-lg transition`}
+                disabled={!termsAccepted || payableAmount <= 0}
+              >
+                Pay ₹{payableAmount}
+              </button>
             </div>
 
-            <button
-              onClick={handlePayment}
-              className={`w-full py-3 rounded-lg ${
-                termsAccepted
-                  ? "bg-orange-500 hover:bg-orange-600"
-                  : "bg-gray-300 cursor-not-allowed"
-              } text-white transition`}
-              disabled={!termsAccepted}
-            >
-              Pay Now
-            </button>
+            {paymentSuccess && (
+              <motion.div
+                className="mt-6 text-green-600"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                Payment successful! Your order is being processed.
+              </motion.div>
+            )}
+            {paymentError && (
+              <motion.div
+                className="mt-6 text-red-600"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                Payment failed. Please try again.
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

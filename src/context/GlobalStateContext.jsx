@@ -1,5 +1,4 @@
 // context/GlobalStateContext.jsx
-
 import React, { createContext, useContext, useState } from "react";
 
 // Create a context
@@ -13,8 +12,16 @@ export const GlobalStateProvider = ({ children }) => {
     endDate: "",
   });
 
+  // New state for orders
+  const [orders, setOrders] = useState([]);
+
+  // Function to add a new order
+  const addOrder = (order) => {
+    setOrders((prevOrders) => [...prevOrders, order]);
+  };
+
   return (
-    <GlobalStateContext.Provider value={{ formData, setFormData }}>
+    <GlobalStateContext.Provider value={{ formData, setFormData, orders, addOrder }}>
       {children}
     </GlobalStateContext.Provider>
   );

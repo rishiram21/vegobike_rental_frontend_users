@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaFilter, FaChevronDown, FaChevronUp, FaGasPump, FaCar, FaCogs } from "react-icons/fa";
 
 const bikes = [
   { id: 1, name: "Honda CB Unicorn 150", basePrice: 599, img: "/bikes/splender.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2018, locations: ["Hadapsar", "Wakad"] },
@@ -12,6 +13,8 @@ const bikes = [
   { id: 8, name: "TVS Jupiter", basePrice: 299, img: "/bikes/jupiter.jpg", type: "Automatic", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2020, locations: ["Kothrud", "Hadapsar"] },
   { id: 9, name: "Royal Enfield Classic 350", basePrice: 999, img: "/bikes/activa.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2017, locations: ["Wakad"] },
   { id: 10, name: "Bajaj Pulsar 150", basePrice: 499, img: "/bikes/pulsar.jpg", type: "Manual", seating: "2-Seater", fuel: "Petrol", deposit: 500, makeYear: 2021, locations: ["Kothrud", "Hadapsar"] },
+
+
 ];
 
 const BikeList = () => {
@@ -57,9 +60,13 @@ const BikeList = () => {
           isFilterOpen ? "block" : "hidden"
         } lg:block`}
       >
-        <h3 className="text-lg font-bold mb-4 text-gray-900">Filters</h3>
+        <h3 className="text-lg font-bold mb-4 text-gray-900 flex items-center">
+          Filters <FaFilter size={24} className="ml-2 text-orange-500" />
+        </h3>
         <div className="mb-6">
-          <h4 className="font-semibold mb-2 text-sm text-gray-700">Transmission Type</h4>
+          <h4 className="font-semibold mb-2 text-sm text-gray-700 flex items-center">
+            Transmission Type <FaCogs className="ml-2 text-gray-500" />
+          </h4>
           <label className="flex items-center mb-2 text-sm">
             <input type="checkbox" className="mr-2" onChange={() => updateFilters("transmissionType", "Manual")} /> Gear
           </label>
@@ -68,7 +75,9 @@ const BikeList = () => {
           </label>
         </div>
         <div className="mb-6">
-          <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
+          <h4 className="font-semibold mb-2 text-sm text-gray-700 flex items-center">
+            Fuel Type <FaGasPump className="ml-2 text-gray-500" />
+          </h4>
           <label className="flex items-center mb-2 text-sm">
             <input type="checkbox" className="mr-2" onChange={() => updateFilters("fuelType", "Petrol")} /> Petrol
           </label>
@@ -90,25 +99,21 @@ const BikeList = () => {
         </div>
         <div className="mb-6">
           <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By Price</h4>
-          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>
-            Low to High
-          </button>
-          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>
-            High to Low
-          </button>
-          <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("relevance")}>
-            Relevance
-          </button>
+          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("asc")}>Low to High</button>
+          <button className="block w-full mb-2 p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("desc")}>High to Low</button>
+          <button className="block w-full p-2 bg-orange-300 hover:bg-orange-400 text-white" onClick={() => sortBikes("relevance")}>Relevance</button>
         </div>
       </aside>
 
       {/* Toggle Button for Small Screens */}
-      <button
-        className="lg:hidden fixed bottom-5 left-5 w-12 h-12 bg-orange-100 text-orange-600 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 z-50"
-        onClick={() => setIsFilterOpen(!isFilterOpen)}
-      >
-        <span className="text-lg font-bold">F</span>
-      </button>
+     {/* Toggle Button for Small Screens */}
+<button
+  className="lg:hidden fixed bottom-5 left-5 w-12 h-12 bg-orange-100 text-orange-600 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 z-50"
+  onClick={() => setIsFilterOpen(!isFilterOpen)}
+>
+  {isFilterOpen ? <FaChevronUp size={20} /> : <FaFilter size={20} />}
+</button>
+
 
       {/* Bike Listing */}
       <main className="w-full lg:w-3/4 pl-0 lg:pl-6">
