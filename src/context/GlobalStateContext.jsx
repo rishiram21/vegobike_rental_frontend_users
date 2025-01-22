@@ -8,6 +8,7 @@ const GlobalStateContext = createContext();
 export const GlobalStateProvider = ({ children }) => {
   const [formData, setFormData] = useState({
     location: "",
+    cityId :"",
     startDate: "",
     endDate: "",
   });
