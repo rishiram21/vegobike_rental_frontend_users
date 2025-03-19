@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import BikeListPage from "./pages/BikeListPage";
@@ -7,13 +7,10 @@ import BikeDetailsPage from "./pages/BikeDetailsPage"; // Bike Details Page
 import ProfilePage from "./pages/ProfilePage"; // Profile Page
 import OrdersPage from "./pages/OrdersPage"; // Orders Page
 import { FaWhatsapp } from "react-icons/fa";
-import LoadingPage from "./components/LoadingPage"; // Loading Page
 import Footer from "./components/Footer";
 import CheckoutPage from "./pages/CheckoutPage";
 import { GlobalStateProvider } from "./context/GlobalStateContext";
 import ContactUs from "./pages/ContactUs"; // Import ContactUs Component
-import LoginPage from "./pages/LoginPage";
-import RegistrationPage from "./pages/RegistrationPage";
 import { AuthProvider } from "./context/AuthContext"; // Import AuthProvider
 
 // Wrapper to conditionally render the Navbar
@@ -49,60 +46,40 @@ const WhatsAppIcon = () => {
 
 // Main App Component
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate a loading time of 3 seconds
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-
-    // Cleanup the timer
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <AuthProvider> {/* Wrap the entire app with AuthProvider */}
       <GlobalStateProvider> {/* Wrap the entire app with GlobalStateProvider */}
         <Router>
-          {isLoading ? (
-            // Show the loading page while loading
-            <LoadingPage />
-          ) : (
-            <ConditionalNavbar>
-              <Routes>
+          <ConditionalNavbar>
+            <Routes>
               {/* Default Route - HomePage will be shown at root "/" */}
-                <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<HomePage />} />
 
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegistrationPage />} />
+              {/* Hero Page Route */}
+              <Route path="/bike-list" element={<BikeListPage />} />
 
-                {/* Hero Page Route */}
-                <Route path="/bike-list" element={<BikeListPage />} />
+              {/* Bike Details Page Route */}
+              <Route path="/bike-details" element={<BikeDetailsPage />} />
 
-                {/* Bike Details Page Route */}
-                <Route path="/bike-details" element={<BikeDetailsPage />} />
+              {/* Profile Page Route */}
+              <Route path="/profile" element={<ProfilePage />} />
 
-                {/* Profile Page Route */}
-                <Route path="/profile" element={<ProfilePage />} />
+              {/* Orders Page Route */}
+              <Route path="/orders" element={<OrdersPage />} />
 
-                {/* Orders Page Route */}
-                <Route path="/orders" element={<OrdersPage />} />
+              {/* Checkout Page Route */}
+              <Route path="/checkout" element={<CheckoutPage />} />
 
-                {/* Checkout Page Route */}
-                <Route path="/checkout" element={<CheckoutPage />} />
+              {/* Contact Us Page Route */}
+              <Route path="/contactus" element={<ContactUs />} />
 
-                {/* Contact Us Page Route */}
-                <Route path="/contactus" element={<ContactUs />} />
-
-                {/* Catch-all for invalid routes */}
-                <Route path="*" element={<div className="text-center mt-20">Page Not Found</div>} />
-              </Routes>
-              {/* Floating WhatsApp Icon */}
-              <WhatsAppIcon />
-              <Footer />
-            </ConditionalNavbar>
-          )}
+              {/* Catch-all for invalid routes */}
+              <Route path="*" element={<div className="text-center mt-20">Page Not Found</div>} />
+            </Routes>
+            {/* Floating WhatsApp Icon */}
+            <WhatsAppIcon />
+            <Footer />
+          </ConditionalNavbar>
         </Router>
       </GlobalStateProvider>
     </AuthProvider>

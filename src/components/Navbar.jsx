@@ -1,177 +1,264 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { FaUser, FaCaretDown, FaPhoneAlt, FaMapMarkerAlt, FaBars, FaContao, FaPhone, FaBook, FaRegBookmark, FaBiking, FaBitbucket } from "react-icons/fa";
-import { AiOutlineCalendar } from "react-icons/ai";
-import { Menu } from "@headlessui/react";
+import { FaUser, FaPhoneAlt, FaBars, FaTimes, FaMotorcycle } from "react-icons/fa";
+import { HiOutlineCalendarDays } from "react-icons/hi2";
+import { IoLocationOutline } from "react-icons/io5";
 import { useGlobalState } from "../context/GlobalStateContext";
-import { TbBikeFilled } from "react-icons/tb";
-import { FaBookSkull, FaPersonBiking } from "react-icons/fa6";
 
 const Navbar = () => {
-  const { formData, setFormData } = useGlobalState(); // Access global state for location and dates
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Sidebar state
+  const { formData, setFormData } = useGlobalState();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+
+  // Create refs for the dropdown and button
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
 
   // Load formData from localStorage on component mount
   useEffect(() => {
     const storedData = JSON.parse(localStorage.getItem("formData"));
-    if (storedData) {
+    if (storedData && Object.keys(storedData).length > 0) {
+      console.log("Loaded data from localStorage:", storedData);
       setFormData(storedData);
+    } else {
+      console.log("No data found in localStorage.");
+      // Don't set empty data back to formData
     }
+
+    // Add scroll event listener
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [setFormData]);
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar visibility
+  // Save formData to localStorage whenever it changes
+  useEffect(() => {
+    // Only save to localStorage if formData has actual content
+    if (formData && Object.keys(formData).length > 0) {
+      console.log("Saving data to localStorage:", formData);
+      localStorage.setItem("formData", JSON.stringify(formData));
+    }
+  }, [formData]);
 
-  // Format date and time to dd/mm/yyyy hh:mm
+  // Add click outside listener to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        isProfileDropdownOpen &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isProfileDropdownOpen]);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutsideMobileMenu = (event) => {
+      if (isMobileMenuOpen) {
+        const mobileMenuArea = document.getElementById('mobile-menu-area');
+        const menuToggle = document.getElementById('mobile-menu-toggle');
+
+        if (
+          mobileMenuArea &&
+          !mobileMenuArea.contains(event.target) &&
+          menuToggle &&
+          !menuToggle.contains(event.target)
+        ) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutsideMobileMenu);
+    document.addEventListener('touchstart', handleClickOutsideMobileMenu);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideMobileMenu);
+      document.removeEventListener('touchstart', handleClickOutsideMobileMenu);
+    };
+  }, [isMobileMenuOpen]);
+
+  // Format date for display
   const formatDate = (datetime) => {
-    if (!datetime) return "N/A";
+    if (!datetime) return "Select";
     const date = new Date(datetime);
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    return `${day}/${month}/${year}`;
   };
 
   return (
-    <nav className="bg-orange-600 text-white shadow-lg p-4 relative z-50 sticky top-0 z-[100]">
-      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-        {/* Logo */}
-        <div className="flex items-center justify-between w-full md:w-auto">
-          <Link to="/" className="text-2xl font-bold text-white">
-            OKBikes
-          </Link>
-        </div>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white text-gray-800 shadow-lg' : 'bg-orange-600 text-white'}`}>
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center py-4">
+          {/* Logo and Location/Date Section */}
+          <div className="flex items-center space-x-4 md:space-x-6">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2">
+              <FaMotorcycle className={`text-2xl ${isScrolled ? 'text-orange-600' : 'text-white'}`} />
+              <span className={`text-2xl font-bold transition-colors ${isScrolled ? 'text-orange-600' : 'text-white'}`}>OKBikes</span>
+            </Link>
 
-        {/* Display Date and Time */}
-        <div className="flex flex-col md:flex-row items-center text-center space-y-2 md:space-y-0">
-          <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium">Pickup:</label>
-            <div className="text-sm bg-white text-black px-4 py-2 border rounded">
-              {formatDate(formData.startDate)}
+            {/* Location and Date Info */}
+            <div className="hidden md:flex items-center space-x-4">
+              {formData.location && (
+                <div className={`flex items-center space-x-1 ${isScrolled ? 'text-gray-600' : 'text-white'}`}>
+                  <IoLocationOutline className="text-lg" />
+                  <div className="text-sm font-medium truncate max-w-[150px]">
+                    {formData.location || "Select Location"}
+                  </div>
+                </div>
+              )}
+
+              {formData.startDate && formData.endDate && (
+                <div className={`flex items-center space-x-1 ${isScrolled ? 'text-gray-600' : 'text-white'}`}>
+                  <HiOutlineCalendarDays className="text-lg" />
+                  <div className="text-sm font-medium">
+                    {formatDate(formData.startDate)} - {formatDate(formData.endDate)}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <label className="text-sm font-medium">Dropoff:</label>
-            <div className="text-sm bg-white text-black px-4 py-2 border rounded">
-              {formatDate(formData.endDate)}
+
+          {/* Right Side: Contact & Profile */}
+          <div className="flex items-center space-x-4">
+            {/* Contact */}
+            <div className={`hidden md:flex items-center space-x-2 ${isScrolled ? 'text-gray-800' : 'text-white'}`}>
+              <FaPhoneAlt size={16} />
+              <span className="font-medium">+91 9545 237 823</span>
             </div>
-          </div>
-        </div>
 
-        {/* Hamburger Button for Mobile View */}
-        <div className="md:hidden flex items-center absolute right-4 top-0">
-          <button
-            onClick={toggleSidebar}
-            className="text-white text-3xl"
-            aria-label="Open Sidebar"
-          >
-            <FaBars />
-          </button>
-        </div>
+            {/* Profile Dropdown */}
+            <div className="relative">
+              <button
+                ref={buttonRef}
+                id="profile-dropdown-button"
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className={`flex items-center space-x-1 p-2 rounded-full ${isScrolled ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-orange-700 text-white hover:bg-orange-800'} transition-colors`}
+              >
+                <FaUser />
+                <span className="hidden md:inline text-sm font-medium">Account</span>
+              </button>
 
-        {/* Phone Number */}
-        <div className="hidden md:flex place-items-end space-x-4">
-          <FaPhoneAlt size={20} className="text-white" />
-          <div className="text-sm place-items-end text-white">+919545237823</div>
-        </div>
-
-        {/* Profile Dropdown */}
-        <div className="relative hidden md:flex items-center space-x-4">
-          <Menu as="div" className="relative">
-            <Menu.Button className="flex items-center text-lg text-white hover:text-orange-400 transition duration-300">
-              <FaUser className="mr-1" />
-              <FaCaretDown className="ml-2" />
-            </Menu.Button>
-            <Menu.Items className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-2 rounded-lg overflow-hidden">
-              <Menu.Item>
-                {({ active }) => (
+              {isProfileDropdownOpen && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-40"
+                >
                   <Link
                     to="/profile"
-                    className={`block px-4 py-3 text-base text-gray-800 ${active ? "bg-orange-100" : ""}`}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                   >
-                    <span className="flex items-center space-x-2">
-                      <FaUser className="text-orange-400" />
-                      <span>My Profile</span>
-                    </span>
+                    My Profile
                   </Link>
-                )}
-              </Menu.Item>
-              <Menu.Item>
-                {({ active }) => (
                   <Link
                     to="/orders"
-                    className={`block px-4 py-3 text-base text-gray-800 ${active ? "bg-orange-100" : ""}`}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                   >
-                    <span className="flex items-center space-x-2">
-                      <FaCaretDown className="text-orange-400" />
-                      <span>Bookings</span>
-                    </span>
+                    My Bookings
                   </Link>
-                )}
-              </Menu.Item>
-              <Menu.Item>
-                {({ active }) => (
                   <Link
                     to="/contactus"
-                    className={`block px-4 py-3 text-base text-gray-800 ${active ? "bg-orange-100" : ""}`}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                   >
-                    <span className="flex items-center space-x-2">
-                      <FaMapMarkerAlt className="text-orange-400" />
-                      <span>Contact Us</span>
-                    </span>
+                    Contact Us
                   </Link>
-                )}
-              </Menu.Item>
-            </Menu.Items>
-          </Menu>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <Link
+                    to="/"
+                    className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    onClick={() => setIsProfileDropdownOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              id="mobile-menu-toggle"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`md:hidden p-2 rounded-md ${isScrolled ? 'text-gray-800' : 'text-white'}`}
+            >
+              {isMobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Sidebar for Mobile View */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-all transform"
-          style={{ transition: "transform 0.3s ease-in-out" }}
-        >
-          <div className="flex flex-col items-center bg-white text-gray-700 py-4 w-3/4 h-full">
-            <button
-              onClick={toggleSidebar}
-              className="text-black text-3xl mb-4"
-              aria-label="Close Sidebar"
-            >
-              &times;
-            </button>
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div id="mobile-menu-area" className="md:hidden bg-white">
+          <div className="px-2 pt-2 pb-4 space-y-1">
+            {/* Mobile Location and Date */}
+            {formData.location && (
+              <div className="flex items-center px-3 py-2 text-gray-600">
+                <IoLocationOutline className="mr-2" />
+                <span className="text-sm">{formData.location}</span>
+              </div>
+            )}
+
+            {formData.startDate && formData.endDate && (
+              <div className="flex items-center px-3 py-2 text-gray-600">
+                <HiOutlineCalendarDays className="mr-2" />
+                <span className="text-sm">{formatDate(formData.startDate)} - {formatDate(formData.endDate)}</span>
+              </div>
+            )}
+
+            <div className="border-t border-gray-200 my-2"></div>
+
             <Link
               to="/profile"
-              onClick={toggleSidebar}
-              className="block px-4 py-2 text-base w-full text-center hover:bg-orange-600 hover:text-white transition duration-200"
+              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="flex items-center justify-center space-x-2">
-                <FaUser className="text-orange-400" />
-                <span>My Profile</span>
-              </span>
+              My Profile
             </Link>
             <Link
-              to="/orders"
-              onClick={toggleSidebar}
-              className="block px-4 py-2 text-base w-full text-center hover:bg-orange-600 hover:text-white transition duration-200"
+              to="/bookings"
+              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="flex items-center justify-center space-x-2">
-                <TbBikeFilled   className="text-orange-400" />
-                <span>Bookings</span>
-              </span>
+              My Bookings
             </Link>
             <Link
               to="/contactus"
-              onClick={toggleSidebar}
-              className="block px-4 py-2 text-base w-full text-center hover:bg-orange-600 hover:text-white transition duration-200"
+              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              <span className="flex items-center justify-center space-x-2">
-                <FaPhoneAlt className="text-orange-400" />
-                <span>Contact Us</span>
-              </span>
+              Contact Us
             </Link>
+            <div className="border-t border-gray-200 my-2"></div>
+            <div className="flex items-center px-3 py-3 text-gray-600">
+              <FaPhoneAlt className="mr-3" />
+              <span>+91 9545 237 823</span>
+            </div>
           </div>
         </div>
       )}

@@ -1,0 +1,61 @@
+/* Add these styles to your CSS file */
+
+/* Fade-in animation */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  /* Slide-in from left animation */
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Slide-in from right animation */
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Scale-up animation */
+  @keyframes scaleUp {
+    from {
+      transform: scale(0.8);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+  
+  /* Apply animations to elements */
+  .fade-in {
+    animation: fadeIn 1s ease-in-out;
+  }
+  
+  .slide-in-left {
+    animation: slideInLeft 0.5s ease-in-out;
+  }
+  
+  .slide-in-right {
+    animation: slideInRight 0.5s ease-in-out;
+  }
+  
+  .scale-up {
+    animation: scaleUp 0.5s ease-in-out;
+  }
+  
+
+  

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaFilter,
@@ -15,33 +15,90 @@ import axios from "axios";
 const BikeListPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [stores, setStores] = useState([]);
+
   const { formData } = location.state || {};
+
+  // Static bike details
+  const staticBikeDetails = {
+    id: 1,
+    model: "Ola Electric",
+    image: "/ola.jpg",
+    perDayRent: 399,
+    deposit: 0, // Assuming no deposit mentioned
+    registrationYear: 2017,
+    storeName: "Ok Bikes Wakad",
+    categoryName: "Scooter",
+    categoryId: 1,
+    fuelType: "Electric",
+    brand: "Ola",
+    vehicleType: "Scooter",
+  };
 
   const [bikes, setBikes] = useState([]);
   const [filteredBikes, setFilteredBikes] = useState([]);
   const [selectedFilters, setSelectedFilters] = useState({
+    vehicleType: [],
+    brands: [],
     fuelType: [],
-    transmissionType: [],
     location: "",
   });
   const [sortOrder, setSortOrder] = useState("");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true); // Loading state
-  const bikesPerPage = 15;
+  const filterRef = useRef(null);
+  const bikesPerPage = 8;
 
-  // Fetch all bikes from the backend
+  // Static filters
+  const filters = {
+    vehicleTypes: ["Scooter", "Bike"],
+    brands: ["Bajaj", "Honda", "Ola","Yamaha"],
+    fuelTypes: ["CNG", "Electric", "PETROL"],
+    locations: ["OK Bikes Mangalvar Peth", "Ok Bikes Bavdhan", "Ok Bikes Wakad"],
+  };
+
   useEffect(() => {
     if (formData) {
+      fetchStoreLocations();
       fetchAvailableBikes();
     } else {
       console.error(
         "No form data found. Please return to the home page and make a selection."
       );
-      // Optionally, navigate back to the home page
       navigate("/");
     }
   }, [formData]);
+
+  const handleStoreChange = (bikeId, newStore) => {
+    console.log(`Bike ID: ${bikeId}, New Store: ${newStore}`);
+    // Update the store for the bike if needed
+  };
+
+  const fetchStoreLocations = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/store/all`, {
+        params: {
+          page: 0,
+          size: 100, // Adjust the size as needed to fetch all stores
+          sortBy: "storeName",
+          sortDirection: "asc",
+        },
+      });
+
+      console.log("Backend response:", response.data); // Log the response
+
+      const storeLocations = response.data.content.map((store) => store.storeName);
+      console.log("Store locations:", storeLocations); // Log the store locations
+
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        locations: storeLocations,
+      }));
+    } catch (error) {
+      console.error("Error fetching store locations:", error);
+    }
+  };
 
   const fetchAvailableBikes = async () => {
     setLoading(true);
@@ -62,49 +119,59 @@ const BikeListPage = () => {
     };
 
     try {
-      const response = await axios.get("http://localhost:8081/vehicle/available", {
-        params,
-      });
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/vehicle/available`,
+        {
+          params,
+        }
+      );
       const bikesData = response.data?.content || [];
-      setBikes(bikesData);
-      setFilteredBikes(bikesData);
+      // Combine fetched bikes with the static bike
+      const combinedBikes = [...bikesData, staticBikeDetails];
+      setBikes(combinedBikes);
+      setFilteredBikes(combinedBikes);
     } catch (error) {
       console.error("Error fetching bikes:", error);
-      setBikes([]);
-      setFilteredBikes([]);
+      setBikes([staticBikeDetails]); // Fallback to static bike if fetch fails
+      setFilteredBikes([staticBikeDetails]);
     } finally {
-      setLoading(false); // Stop loading
-    }    
+      setLoading(false);
+    }
   };
-  
 
   const applyFilters = (filters, order) => {
     let result = [...bikes];
 
-    // Apply fuel type filter
+    console.log("Applying filters:", filters); // Log the filters being applied
+
+    if (filters.vehicleType.length > 0) {
+      result = result.filter((bike) =>
+        filters.vehicleType.includes(bike.vehicleType)
+      );
+    }
+
+    if (filters.brands.length > 0) {
+      result = result.filter((bike) =>
+        filters.brands.includes(bike.brand)
+      );
+    }
+
     if (filters.fuelType.length > 0) {
       result = result.filter((bike) =>
-        filters.fuelType.includes(bike.fuelType || "Petrol")
+        filters.fuelType.includes(bike.fuelType)
       );
     }
 
-    // Apply transmission type filter
-    if (filters.transmissionType.length > 0) {
-      result = result.filter((bike) =>
-        filters.transmissionType.includes(bike.transmissionType || "Gear")
-      );
-    }
-
-    // Apply location filter
     if (filters.location) {
       result = result.filter((bike) => bike.storeName === filters.location);
     }
 
-    // Apply sorting
     if (order === "asc")
-      result.sort((a, b) => a.registrationYear - b.registrationYear);
+      result.sort((a, b) => a.perDayRent - b.perDayRent);
     if (order === "desc")
-      result.sort((a, b) => b.registrationYear - a.registrationYear);
+      result.sort((a, b) => b.perDayRent - a.perDayRent);
+
+    console.log("Filtered bikes:", result); // Log the filtered bikes
 
     setFilteredBikes(result);
   };
@@ -117,13 +184,12 @@ const BikeListPage = () => {
   const updateFilters = (filterType, value) => {
     const newFilters = { ...selectedFilters };
 
-    if (filterType === "fuelType") {
+    if (filterType === "vehicleType") {
+      newFilters.vehicleType = toggleFilter(newFilters.vehicleType, value);
+    } else if (filterType === "brands") {
+      newFilters.brands = toggleFilter(newFilters.brands, value);
+    } else if (filterType === "fuelType") {
       newFilters.fuelType = toggleFilter(newFilters.fuelType, value);
-    } else if (filterType === "transmissionType") {
-      newFilters.transmissionType = toggleFilter(
-        newFilters.transmissionType,
-        value
-      );
     } else if (filterType === "location") {
       newFilters.location = value;
     }
@@ -137,203 +203,241 @@ const BikeListPage = () => {
     applyFilters(selectedFilters, order);
   };
 
-  // Get current bikes to render based on pagination
+  const resetFilters = () => {
+    setSelectedFilters({
+      vehicleType: [],
+      brands: [],
+      fuelType: [],
+      location: "",
+    });
+    setSortOrder("");
+    applyFilters({
+      vehicleType: [],
+      brands: [],
+      fuelType: [],
+      location: "",
+    }, "");
+
+    // Reload the page
+    window.location.reload();
+  };
+
   const indexOfLastBike = currentPage * bikesPerPage;
   const indexOfFirstBike = indexOfLastBike - bikesPerPage;
   const currentBikes = filteredBikes.slice(indexOfFirstBike, indexOfLastBike);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  useEffect(() => {
+    if (showFilters && filterRef.current) {
+      filterRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [showFilters]);
+
   return (
-    <div className="w-full min-h-screen bg-orange-50">
-      <div className="container mx-auto py-6 flex flex-col lg:flex-row">
-        {/* Filter Section */}
-        <aside
-          className={`w-full lg:w-1/4 bg-orange-50 p-4 border-2 border-stone-200 fixed ${
-            isFilterOpen ? "block" : "hidden"
-          } lg:block z-50 top-0 h-full lg:static lg:h-auto`}
-        >
-          <h3 className="text-lg font-bold mb-4 text-gray-900 flex items-center">
-            Filters <FaFilter size={24} className="ml-2 text-orange-500" />
-          </h3>
-          {/* Fuel Type Filter */}
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">
-              Fuel Type
-            </h4>
-            <label className="flex items-center mb-2 text-sm">
-              <input
-                type="checkbox"
-                onChange={() => updateFilters("fuelType", "Petrol")}
-                className="mr-2"
-              />
-              <FaGasPump className="mr-2 text-orange-500" /> Petrol
-            </label>
-            <label className="flex items-center text-sm">
-              <input
-                type="checkbox"
-                onChange={() => updateFilters("fuelType", "Electric")}
-                className="mr-2"
-              />
-              <FaGasPump className="mr-2 text-green-500" /> Electric
-            </label>
-          </div>
- 
-          {/* Transmission Type Filter */}
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">Transmission Type</h4>
-            <label className="flex items-center mb-2 text-sm">
-              <input
-                type="checkbox"
-                onChange={() => updateFilters("transmissionType", "Gear")}
-                className="mr-2"
-              />
-              <FaCogs className="mr-2 text-orange-500" /> Gear
-            </label>
-            <label className="flex items-center text-sm">
-              <input
-                type="checkbox"
-                onChange={() => updateFilters("transmissionType", "Gearless")}
-                className="mr-2"
-              />
-              <FaCogs className="mr-2 text-green-500" /> Gearless
-            </label>
-          </div>
+    <div className="container mx-auto py-6 flex flex-col lg:flex-row relative min-h-screen mt-14">
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className="lg:hidden fixed bottom-4 left-4 bg-orange-500 text-white p-3 square shadow-lg z-50 flex items-center gap-2"
+      >
+        <FaFilter size={24} />
+      </button>
 
-          {/* Location Filter */}
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">Location</h4>
-            <select
-              className="w-full p-3 border bg-white text-gray-700"
-              onChange={(e) => updateFilters("location", e.target.value)}
-            >
-              <option value="">All</option>
-              <option value="Hinjewadi">Hinjewadi</option>
-              <option value="Kharadi Store">Kharadi Store</option>
-              <option value="Koregaon Park">Koregaon Park</option>
-            </select>
-          </div>
-
-          {/* Sort By Registration Year */}
-          <div className="mb-6">
-            <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By</h4>
-            <button
-              className="block w-full mb-2 p-2 bg-orange-400 hover:bg-orange-500 text-white"
-              onClick={() => handleSort("asc")}
-            >
-              Low to High
-            </button>
-            <button
-              className="block w-full mb-2 p-2 bg-orange-400 hover:bg-orange-500 text-white"
-              onClick={() => handleSort("desc")}
-            >
-              High to Low
-            </button>
-          </div>
-
-          {/* Close Filter Button */}
+      <aside
+        ref={filterRef}
+        className={`w-full lg:w-1/4 bg-gray-100 p-4 mb-6 lg:mb-0 transition-transform duration-300 ease-in-out ${
+          showFilters ? "block" : "hidden lg:block"
+        }`}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Filters</h3>
           <button
-            className="lg:hidden fixed bottom-5 right-5 w-16 h-16 bg-red-500 text-white shadow-lg flex items-center justify-center transition-transform transform hover:scale-110"
-            onClick={() => setIsFilterOpen(false)}
+            onClick={() => setShowFilters(false)}
+            className="lg:hidden text-gray-500 hover:text-gray-700"
           >
-            <FaTimes size={24} />
+            <FaTimes />
           </button>
-        </aside>
-
-        {/* Small Screen Filter Button */}
+        </div>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">
+            Vehicle Type
+          </h4>
+          {filters.vehicleTypes.map((type) => (
+            <label key={type} className="flex items-center mb-2 text-sm">
+              <input
+                type="checkbox"
+                className="mr-2"
+                onChange={() => updateFilters("vehicleType", type)}
+              />
+              {type}
+            </label>
+          ))}
+        </div>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">Brands</h4>
+          {filters.brands.map((brand) => (
+            <label key={brand} className="flex items-center mb-2 text-sm">
+              <input
+                type="checkbox"
+                className="mr-2"
+                onChange={() => updateFilters("brands", brand)}
+              />
+              {brand}
+            </label>
+          ))}
+        </div>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
+          {filters.fuelTypes.map((fuelType) => (
+            <label key={fuelType} className="flex items-center mb-2 text-sm">
+              <input
+                type="checkbox"
+                className="mr-2"
+                onChange={() => updateFilters("fuelType", fuelType)}
+              />
+              {fuelType}
+            </label>
+          ))}
+        </div>
+        <div className="mb-6">
+          <h4 className="font-semibold mb-2 text-sm text-gray-700">Location</h4>
+          <select
+            className="w-full p-3 border-2 border-gray-300 bg-white text-gray-700 text-sm transition-all duration-300 ease-in-out transform hover:scale-105 focus:ring-2 focus:outline-none"
+            onChange={(e) => updateFilters("location", e.target.value)}
+          >
+            <option value="">All</option>
+            {filters.locations.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+        </div>
+        <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By</h4>
+        <div className="mb-6 flex flex-row gap-2">
+          <button
+            className="block w-full bg-orange-300 text-white"
+            onClick={() => handleSort("asc")}
+          >
+            Price: Low to High
+          </button>
+          <button
+            className="block w-full bg-orange-300 text-white"
+            onClick={() => handleSort("desc")}
+          >
+            Price: High to Low
+          </button>
+        </div>
         <button
-          className="lg:hidden fixed bottom-5 left-5 w-16 h-16 bg-orange-500 text-white shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 z-50"
-          onClick={() => {
-            setIsFilterOpen(!isFilterOpen);
-            if (!isFilterOpen) window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
+          className="w-full p-2 bg-red-500 text-white"
+          onClick={resetFilters}
         >
-          {isFilterOpen ? <FaChevronUp size={24} /> : <FaFilter size={24} />}
+          Reset Filters
         </button>
+      </aside>
 
-        {/* Bike List Section */}
-        <main className="w-full lg:w-3/4 pl-0 lg:pl-6">
-          {loading ? (
-            <div className="flex justify-center items-center h-96">
-              <FaSpinner className="animate-spin text-orange-500 text-4xl" />
-            </div>
-          ) : currentBikes.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {currentBikes.map((bike) => (
-                <div
-                  key={bike.id}
-                  className="bg-white border border-gray-300 rounded overflow-hidden shadow-md transition-transform transform hover:scale-105"
-                >
-                  <div className="relative h-36 bg-gray-100 flex justify-center items-center">
-                    <img
-                      src={bike.image || "/default-image.jpg"}
-                      alt={bike.model}
-                      className="object-contain h-36 w-full"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <h3 className="text-md font-bold text-gray-800 truncate">{bike.model}</h3>
-                    <p className="text-xs text-gray-600">Brand: {bike.brand}</p>
-                    <p className="text-xs text-gray-600">Year: {bike.registrationYear || "Unknown"}</p>
-                    <p className="text-xs text-gray-600 flex items-center">
-                      <FaMapMarkerAlt className="mr-1 text-red-500 animate-bounce" /> {bike.storeName}
-                    </p>
-                    <p className="text-lg font-semibold text-gray-900 mt-2">
-                      ₹{bike.brand === "Honda" ? 499 : 599}/day
-                    </p>
-                    <p className="text-sm font-semibold text-gray-700">Deposit: ₹2000</p>
-                    <ul className="text-xs text-gray-600 mt-1 list-disc ml-4">
-                      <li>Fuel Excluded</li>
-                      <li>No Distance Limit</li>
-                    </ul>
-                    <button
-                      className="mt-2 w-full bg-orange-500 text-white py-1 px-3 hover:bg-orange-600 transition-colors text-sm"
-                      onClick={() =>
-                        navigate(`/bike-details`, {
-                          state: {
-                            id: bike.id,
-                            model:bike.model,
-                            name: bike.name,
-                            img: bike.image,
-                            basePrice: bike.brand === "Honda" ? 499 : 599,
-                            deposit: 2000,
-                            registrationYear: bike.registrationYear,
-                            storeName: bike.storeName,
-                            categoryName: bike.categoryName,
-                            categoryId: bike.categoryId,
-                          },
-                        })
-                      }   
-                    >
-                      Rent Now
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-gray-500">No bikes available</p>
-          )}
-
-          {/* Pagination */}
-          <div className="flex justify-center items-center mt-6">
-            {[...Array(Math.ceil(filteredBikes.length / bikesPerPage)).keys()].map((page) => (
-              <button
-                key={page + 1}
-                onClick={() => paginate(page + 1)}
-                className={`px-3 py-2 mx-1 border rounded-full ${
-                  currentPage === page + 1
-                    ? "bg-orange-500 text-white"
-                    : "bg-white text-gray-700"
-                } hover:bg-orange-400 hover:text-white`}
+      <main className="w-full lg:w-3/4 pl-0 lg:pl-6">
+        {loading ? (
+          <div className="flex justify-center items-center h-96">
+            <FaSpinner className="animate-spin text-orange-500 text-4xl" />
+          </div>
+        ) : currentBikes.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+            {currentBikes.map((bike) => (
+              <div
+                key={bike.id}
+                className="bg-white border p-4 shadow-md hover:shadow-xl transition-shadow rounded-lg"
               >
-                {page + 1}
-              </button>
+                <img
+                  src={bike.image || "/default-image.jpg"}
+                  alt={bike.model}
+                  className="w-full h-40 object-contain rounded-t-lg"
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <h3 className="text-base font-medium truncate">
+                    {bike.model}
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-600 mt-1 mb-3">
+                  Year: {bike.registrationYear || "Unknown"}
+                </p>
+
+                <h2>Available at</h2>
+                <div className="flex items-center">
+                  <span className="text-green-500 mr-1">
+                    <FaMapMarkerAlt />
+                  </span>
+                  <p className="text-sm text-gray-600">{bike.storeName}</p>
+                </div>
+
+                <div className="flex items-center mt-3">
+                  <span className="text-sm font-semibold text-gray-700">
+                    Price:
+                  </span>
+                  <span className="text-lg font-bold ml-2">
+                    ₹{bike.perDayRent}/day
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  Fuel excluded, No distance limit
+                </p>
+                {bike.id === staticBikeDetails.id ? (
+                  <button
+                    className="mt-3 w-full bg-gray-300 text-gray-700 py-2 px-2 rounded-lg"
+                    disabled
+                  >
+                    Coming Soon
+                  </button>
+                ) : (
+                  <button
+                    className="mt-3 w-full bg-orange-500 text-white py-2 px-2 hover:bg-orange-600 transition-colors rounded-lg"
+                    onClick={() =>
+                      navigate(`/bike-details`, {
+                        state: {
+                          id: bike.id,
+                          model: bike.model,
+                          name: bike.name,
+                          img: bike.image,
+                          basePrice: bike.perDayRent,
+                          deposit: bike.deposit,
+                          registrationYear: bike.registrationYear,
+                          storeName: bike.storeName,
+                          categoryName: bike.categoryName,
+                          categoryId: bike.categoryId,
+                        },
+                      })
+                    }
+                  >
+                    Rent Now
+                  </button>
+                )}
+              </div>
             ))}
           </div>
-        </main>
-      </div>
+        ) : (
+          <p className="text-center text-gray-500">No bikes available</p>
+        )}
+
+        <div className="flex justify-center items-center mt-6">
+          {[
+            ...Array(Math.ceil(filteredBikes.length / bikesPerPage)).keys(),
+          ].map((page) => (
+            <button
+              key={page + 1}
+              onClick={() => paginate(page + 1)}
+              className={`px-3 py-2 mx-1 border rounded-full ${
+                currentPage === page + 1
+                  ? "bg-orange-500 text-white"
+                  : "bg-white text-gray-700"
+              } hover:bg-orange-400 hover:text-white`}
+            >
+              {page + 1}
+            </button>
+          ))}
+        </div>
+      </main>
     </div>
   );
 };
+
 export default BikeListPage;

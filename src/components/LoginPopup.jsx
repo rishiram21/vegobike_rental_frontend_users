@@ -1,0 +1,330 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+const LoginPopup = ({ onClose, openRegistration }) => {
+  const [mobile, setMobile] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [alertMessage, setAlertMessage] = useState(null);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+
+  const navigate = useNavigate();
+
+  const showAlert = (message) => {
+    setAlertMessage(message);
+    setTimeout(() => setAlertMessage(null), 3000);
+  };
+
+  const sendOTP = async () => {
+    if (mobile.length !== 10) {
+      setError("Enter a valid 10-digit mobile number.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/send-login-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: `+91${mobile}` }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send OTP.");
+      }
+
+      setOtpSent(true);
+      showAlert("OTP sent successfully!");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOTP = async () => {
+    if (otp.length !== 6) {
+      setError("Enter a valid 6-digit OTP.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/verify-login-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: `+91${mobile}`, otp }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Invalid OTP.");
+      }
+
+      // Store JWT token in localStorage
+      localStorage.setItem("jwtToken", data.token);
+      
+      // Show success animation instead of alert
+      setShowSuccessAnimation(true);
+      
+      setTimeout(() => {
+        onClose();
+        navigate("/checkout"); // Redirect to checkout or dashboard
+      }, 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Success animation component
+  const SuccessAnimation = () => {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-90 z-50">
+        <div className="text-center">
+          <div className="success-checkmark">
+            <div className="check-icon">
+              <span className="icon-line line-tip"></span>
+              <span className="icon-line line-long"></span>
+              <div className="icon-circle"></div>
+              <div className="icon-fix"></div>
+            </div>
+          </div>
+          <h3 className="text-xl font-bold text-green-600 mt-4">Login Successful!</h3>
+          <p className="text-gray-600 mt-2">Redirecting you shortly...</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+      <style jsx>{`
+        .success-checkmark {
+          width: 80px;
+          height: 80px;
+          margin: 0 auto;
+        }
+        .check-icon {
+          width: 80px;
+          height: 80px;
+          position: relative;
+          border-radius: 50%;
+          box-sizing: content-box;
+          border: 4px solid #4CAF50;
+        }
+        .check-icon::before {
+          top: 3px;
+          left: -2px;
+          width: 30px;
+          transform-origin: 100% 50%;
+          border-radius: 100px 0 0 100px;
+        }
+        .check-icon::after {
+          top: 0;
+          left: 30px;
+          width: 60px;
+          transform-origin: 0 50%;
+          border-radius: 0 100px 100px 0;
+          animation: rotate-circle 4.25s ease-in;
+        }
+        .check-icon::before, .check-icon::after {
+          content: '';
+          height: 100px;
+          position: absolute;
+          background: #FFFFFF;
+          transform: rotate(-45deg);
+        }
+        .icon-line {
+          height: 5px;
+          background-color: #4CAF50;
+          display: block;
+          border-radius: 2px;
+          position: absolute;
+          z-index: 10;
+        }
+        .icon-line.line-tip {
+          top: 46px;
+          left: 14px;
+          width: 25px;
+          transform: rotate(45deg);
+          animation: icon-line-tip 0.75s;
+        }
+        .icon-line.line-long {
+          top: 38px;
+          right: 8px;
+          width: 47px;
+          transform: rotate(-45deg);
+          animation: icon-line-long 0.75s;
+        }
+        .icon-circle {
+          top: -4px;
+          left: -4px;
+          z-index: 10;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          position: absolute;
+          box-sizing: content-box;
+          border: 4px solid rgba(76, 175, 80, .5);
+        }
+        .icon-fix {
+          top: 8px;
+          width: 5px;
+          left: 26px;
+          z-index: 1;
+          height: 85px;
+          position: absolute;
+          transform: rotate(-45deg);
+          background-color: #FFFFFF;
+        }
+        @keyframes rotate-circle {
+          0% {
+            transform: rotate(-45deg);
+          }
+          5% {
+            transform: rotate(-45deg);
+          }
+          12% {
+            transform: rotate(-405deg);
+          }
+          100% {
+            transform: rotate(-405deg);
+          }
+        }
+        @keyframes icon-line-tip {
+          0% {
+            width: 0;
+            left: 1px;
+            top: 19px;
+          }
+          54% {
+            width: 0;
+            left: 1px;
+            top: 19px;
+          }
+          70% {
+            width: 50px;
+            left: -8px;
+            top: 37px;
+          }
+          84% {
+            width: 17px;
+            left: 21px;
+            top: 48px;
+          }
+          100% {
+            width: 25px;
+            left: 14px;
+            top: 45px;
+          }
+        }
+        @keyframes icon-line-long {
+          0% {
+            width: 0;
+            right: 46px;
+            top: 54px;
+          }
+          65% {
+            width: 0;
+            right: 46px;
+            top: 54px;
+          }
+          84% {
+            width: 55px;
+            right: 0px;
+            top: 35px;
+          }
+          100% {
+            width: 47px;
+            right: 8px;
+            top: 38px;
+          }
+        }
+      `}</style>
+
+      <div className="bg-white p-6 rounded shadow-lg w-96 relative">
+        {alertMessage && (
+          <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
+            {alertMessage}
+          </div>
+        )}
+        
+        {showSuccessAnimation ? <SuccessAnimation /> : (
+          <>
+            <h2 className="text-xl font-bold mb-4">Login</h2>
+
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+            <input
+              type="tel"
+              placeholder="Enter 10-digit mobile number"
+              className="border p-2 w-full mb-2"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              maxLength={10}
+            />
+
+            {!otpSent ? (
+              <button
+                onClick={sendOTP}
+                disabled={loading || mobile.length !== 10}
+                className={`bg-blue-500 text-white px-4 py-2 w-full ${
+                  loading || mobile.length !== 10 ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {loading ? "Sending..." : "Send OTP"}
+              </button>
+            ) : (
+              <>
+                <input
+                  type="number"
+                  placeholder="Enter 6-digit OTP"
+                  className="border p-2 w-full mt-2"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                />
+                <button
+                  onClick={verifyOTP}
+                  disabled={loading || otp.length !== 6}
+                  className={`bg-green-500 text-white px-4 py-2 w-full mt-2 ${
+                    loading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {loading ? "Verifying..." : "Verify OTP"}
+                </button>
+              </>
+            )}
+
+            <p className="text-sm mt-4 text-center">
+              Don't have an account?{" "}
+              <button
+                onClick={() => {
+                  onClose();
+                  openRegistration();
+                }}
+                className="text-blue-500 underline"
+              >
+                Register here
+              </button>
+            </p>
+
+            <button onClick={onClose} className="mt-4 text-red-500">
+              Close
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LoginPopup;

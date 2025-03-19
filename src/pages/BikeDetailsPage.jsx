@@ -2,41 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaMapMarkerAlt, FaCalendarAlt, FaTags } from "react-icons/fa";
 import { AiOutlinePlus, AiOutlineMinus, AiOutlineCaretDown, AiOutlineCaretUp } from "react-icons/ai";
-import AuthPopup from "../components/AuthPopup"; // Correct relative path
+import LoginPopup from "../components/LoginPopup";
+import RegistrationPopup from "../components/RegistrationPopup";
 
 const BikeDetailsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const bike = location.state || {};
-  const [isAuthPopupOpen, setIsAuthPopupOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Simulate login state
-  const serviceCharge =2;
-
-  
-
-  const handleProceedToCheckout = () => {
-    if (!isLoggedIn) {
-      setIsAuthPopupOpen(true); // Open the login/registration popup
-      return;
-    }
-
-    // If logged in, navigate to checkout
-    navigate("/checkout", {
-      state: { bike, totalPrice, selectedPackage, rentalDays, addressDetails },
-    });
-  };
-
-  const handleLogin = (formData) => {
-    console.log("Login data:", formData);
-    setIsLoggedIn(true); // Update login state
-    setIsAuthPopupOpen(false); // Close popup
-  };
-
-  const handleRegister = (formData) => {
-    console.log("Registration data:", formData);
-    setIsLoggedIn(true); // Simulate registration and login
-    setIsAuthPopupOpen(false); // Close popup
-  };
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
+  const [isRegistrationPopupOpen, setIsRegistrationPopupOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const serviceCharge = 2;
 
   const [packages, setPackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -58,9 +34,14 @@ const BikeDetailsPage = () => {
 
   const fetchPackages = async (categoryId) => {
     try {
-      const response = await fetch(`http://localhost:8081/package/list/${categoryId}`);
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/package/list/${categoryId}`);
       const data = await response.json();
       setPackages(data);
+
+      if (data.length > 0) {
+        setSelectedPackage(data[0]);
+        setRentalDays(data[0].days);
+      }
     } catch (error) {
       console.error("Error fetching packages:", error);
       setPackages([]);
@@ -82,36 +63,77 @@ const BikeDetailsPage = () => {
   };
 
   const totalPrice = selectedPackage
-  ? selectedPackage.price * rentalDays +
-    (pickupOption === "Delivery at Location" ? 250 : 0) +
-    serviceCharge // Adding ₹2 service charge
-  : 0;
+    ? selectedPackage.price * rentalDays +
+      (pickupOption === "Delivery at Location" ? 250 : 0) +
+      serviceCharge
+    : 0;
 
   const handleAddressChange = (field, value) => {
     setAddressDetails((prevDetails) => ({ ...prevDetails, [field]: value }));
   };
 
-  
+  const handleProceedToCheckout = () => {
+    if (!selectedPackage) {
+      alert("Please select a rental package before proceeding.");
+      return;
+    }
+
+    const deliveryCharge = pickupOption === "Delivery at Location" ? 250 : 0;
+    const checkoutData = {
+      bike,
+      totalPrice: selectedPackage.price * rentalDays + deliveryCharge + serviceCharge,
+      selectedPackage,
+      rentalDays,
+      addressDetails,
+      pickupOption,
+      deliveryCharge,
+      serviceCharge,
+      pickupDate: new Date(),
+      dropDate: new Date(Date.now() + (rentalDays * 24 * 60 * 60 * 1000)),
+      storeName: bike.storeName || "Our Store Location: Rental Street",
+    };
+
+    if (!isLoggedIn) {
+      sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+      setIsLoginPopupOpen(true);
+      return;
+    }
+
+    navigate("/checkout", { state: checkoutData });
+  };
+
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+    setIsLoginPopupOpen(false);
+
+    const savedData = sessionStorage.getItem('checkoutData');
+    if (savedData) {
+      navigate("/checkout", { state: JSON.parse(savedData) });
+      sessionStorage.removeItem('checkoutData');
+    }
+  };
+
+  const handleRegistrationSuccess = () => {
+    setIsLoggedIn(true);
+    setIsRegistrationPopupOpen(false);
+  };
 
   return (
-    <div className="container mx-auto py-12 px-4 lg:px-6">
+    <div className="container mx-auto py-12 px-4 lg:px-6 mt-14">
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Bike Image */}
         <div className="flex flex-col shadow border items-center rounded-lg overflow-hidden">
           <img
             src={bike.img || "/placeholder-image.jpg"}
             alt={bike.name || "Bike Image"}
-            className="w-full h-auto object-cover"
+            className="w-96 h-auto object-cover mt-32"
           />
           <p className="mt-3 text-gray-500 text-xs italic">
             *Images are for representation purposes only.
           </p>
         </div>
-        {/* Bike Details */}
         <div className="bg-white p-6 rounded-lg shadow-lg space-y-6">
           <h2 className="text-2xl font-bold text-gray-800">{bike.model || "Bike Name"}</h2>
 
-          {/* Rental Packages */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-700">
               <FaTags className="inline mr-2 text-orange-400" /> Rental Packages
@@ -152,7 +174,6 @@ const BikeDetailsPage = () => {
             </div>
           </div>
 
-          {/* Rental Duration */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-700">
               <FaCalendarAlt className="inline mr-2 text-orange-400" /> Rental Duration
@@ -174,7 +195,6 @@ const BikeDetailsPage = () => {
             </div>
           </div>
 
-          {/* Pickup Options */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-700">
               <FaMapMarkerAlt className="inline mr-2 text-orange-400" /> Pickup Option
@@ -206,7 +226,6 @@ const BikeDetailsPage = () => {
             </div>
           </div>
 
-          {/* Address Popup */}
           {showAddressPopup && (
             <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
               <div className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
@@ -259,18 +278,16 @@ const BikeDetailsPage = () => {
             </div>
           )}
 
-          {/* Total Price */}
           <div className="mt-4 space-y-2">
             <h3 className="text-lg font-bold text-gray-800">Price Breakdown:</h3>
             <p className="text-sm text-gray-600">
               <strong>Package Price:</strong> ₹{selectedPackage?.price || 0}
             </p>
-            
             <p className="text-sm text-gray-600">
               <strong>Delivery Charge:</strong> ₹{pickupOption === "Delivery at Location" ? 250 : 0}
             </p>
             <p className="text-sm text-gray-600">
-              <strong>Service Charge:</strong> ₹{serviceCharge}
+              <strong>Convenience Charge:</strong> ₹{serviceCharge}
             </p>
             <hr className="my-2" />
             <h3 className="text-lg font-bold text-gray-800">
@@ -278,7 +295,6 @@ const BikeDetailsPage = () => {
             </h3>
           </div>
 
-          {/* Proceed to Checkout Button */}
           <button
             onClick={handleProceedToCheckout}
             className="w-full py-3 bg-orange-400 text-white font-semibold rounded hover:bg-orange-500 transition-all duration-300"
@@ -286,13 +302,26 @@ const BikeDetailsPage = () => {
             Proceed to Checkout
           </button>
 
-          {/* Auth Popup */}
-          <AuthPopup
-            isOpen={isAuthPopupOpen}
-            onClose={() => setIsAuthPopupOpen(false)}
-            onLogin={handleLogin}
-            // onRegister={handleRegister}
-          />
+          {isLoginPopupOpen && (
+            <LoginPopup
+              onClose={() => setIsLoginPopupOpen(false)}
+              onLogin={handleLoginSuccess}
+              openRegistration={() => {
+                setIsLoginPopupOpen(false);
+                setIsRegistrationPopupOpen(true);
+              }}
+            />
+          )}
+
+          {isRegistrationPopupOpen && (
+            <RegistrationPopup
+              onClose={() => setIsRegistrationPopupOpen(false)}
+              openLogin={() => {
+                setIsRegistrationPopupOpen(false);
+                setIsLoginPopupOpen(true);
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

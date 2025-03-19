@@ -22,7 +22,7 @@ const ContactUs = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen py-8 px-4">
+    <div className="bg-gray-100 min-h-screen py-8 px-4 mt-14">
       <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-center text-orange-600 mb-6">Contact Us</h2>
 
