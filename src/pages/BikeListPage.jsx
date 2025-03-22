@@ -11,11 +11,18 @@ import {
   FaMapMarkerAlt,
 } from "react-icons/fa";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext"; // Import useAuth for token management
 
 const BikeListPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = useAuth(); // Use the token from AuthContext
   const [stores, setStores] = useState([]);
+
+  // Define static locations as strings
+  const staticLocation1 = "OK Bikes Mangalvar Peth";
+  const staticLocation2 = "DK Store";
+  const staticLocation3 = "OK Bikes Wakad";
 
   const { formData } = location.state || {};
 
@@ -27,12 +34,12 @@ const BikeListPage = () => {
     perDayRent: 399,
     deposit: 0, // Assuming no deposit mentioned
     registrationYear: 2017,
-    storeName: "Ok Bikes Wakad",
+    storeName: staticLocation3,
     categoryName: "Scooter",
     categoryId: 1,
     fuelType: "Electric",
     brand: "Ola",
-    vehicleType: "Scooter",
+    vehicleType: "Scooter", // Ensure vehicleType is set
   };
 
   const [bikes, setBikes] = useState([]);
@@ -50,17 +57,13 @@ const BikeListPage = () => {
   const filterRef = useRef(null);
   const bikesPerPage = 8;
 
-  // Static filters
-  const filters = {
-    vehicleTypes: ["Scooter", "Bike"],
-    brands: ["Bajaj", "Honda", "Ola","Yamaha"],
-    fuelTypes: ["CNG", "Electric", "PETROL"],
-    locations: ["OK Bikes Mangalvar Peth", "Ok Bikes Bavdhan", "Ok Bikes Wakad"],
-  };
+  // Log the token when the component mounts
+  useEffect(() => {
+    console.log("Token from AuthContext:", token);
+  }, [token]);
 
   useEffect(() => {
     if (formData) {
-      fetchStoreLocations();
       fetchAvailableBikes();
     } else {
       console.error(
@@ -70,34 +73,14 @@ const BikeListPage = () => {
     }
   }, [formData]);
 
+  // Scroll to top when the component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const handleStoreChange = (bikeId, newStore) => {
     console.log(`Bike ID: ${bikeId}, New Store: ${newStore}`);
     // Update the store for the bike if needed
-  };
-
-  const fetchStoreLocations = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/store/all`, {
-        params: {
-          page: 0,
-          size: 100, // Adjust the size as needed to fetch all stores
-          sortBy: "storeName",
-          sortDirection: "asc",
-        },
-      });
-
-      console.log("Backend response:", response.data); // Log the response
-
-      const storeLocations = response.data.content.map((store) => store.storeName);
-      console.log("Store locations:", storeLocations); // Log the store locations
-
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        locations: storeLocations,
-      }));
-    } catch (error) {
-      console.error("Error fetching store locations:", error);
-    }
   };
 
   const fetchAvailableBikes = async () => {
@@ -126,8 +109,14 @@ const BikeListPage = () => {
         }
       );
       const bikesData = response.data?.content || [];
-      // Combine fetched bikes with the static bike
-      const combinedBikes = [...bikesData, staticBikeDetails];
+      // Ensure each bike has a categoryName
+      const combinedBikes = bikesData.map(bike => ({
+        ...bike,
+        categoryName: bike.categoryName || "Unknown", // Default to "Unknown" if not set
+      }));
+
+      combinedBikes.push(staticBikeDetails);
+      console.log("Fetched Bikes:", combinedBikes); // Log fetched bikes
       setBikes(combinedBikes);
       setFilteredBikes(combinedBikes);
     } catch (error) {
@@ -146,7 +135,7 @@ const BikeListPage = () => {
 
     if (filters.vehicleType.length > 0) {
       result = result.filter((bike) =>
-        filters.vehicleType.includes(bike.vehicleType)
+        filters.vehicleType.includes(bike.categoryName)
       );
     }
 
@@ -193,6 +182,8 @@ const BikeListPage = () => {
     } else if (filterType === "location") {
       newFilters.location = value;
     }
+
+    console.log("Updated filters:", newFilters); // Log the updated filters
 
     setSelectedFilters(newFilters);
     applyFilters(newFilters, sortOrder);
@@ -262,42 +253,84 @@ const BikeListPage = () => {
           <h4 className="font-semibold mb-2 text-sm text-gray-700">
             Vehicle Type
           </h4>
-          {filters.vehicleTypes.map((type) => (
-            <label key={type} className="flex items-center mb-2 text-sm">
-              <input
-                type="checkbox"
-                className="mr-2"
-                onChange={() => updateFilters("vehicleType", type)}
-              />
-              {type}
-            </label>
-          ))}
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("vehicleType", "Scooter")}
+            />
+            Scooter
+          </label>
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("vehicleType", "Bike")}
+            />
+            Bike
+          </label>
         </div>
         <div className="mb-6">
           <h4 className="font-semibold mb-2 text-sm text-gray-700">Brands</h4>
-          {filters.brands.map((brand) => (
-            <label key={brand} className="flex items-center mb-2 text-sm">
-              <input
-                type="checkbox"
-                className="mr-2"
-                onChange={() => updateFilters("brands", brand)}
-              />
-              {brand}
-            </label>
-          ))}
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("brands", "Bajaj")}
+            />
+            Bajaj
+          </label>
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("brands", "Honda")}
+            />
+            Honda
+          </label>
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("brands", "Ola")}
+            />
+            Ola
+          </label>
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("brands", "Yamaha")}
+            />
+            Yamaha
+          </label>
         </div>
         <div className="mb-6">
           <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
-          {filters.fuelTypes.map((fuelType) => (
-            <label key={fuelType} className="flex items-center mb-2 text-sm">
-              <input
-                type="checkbox"
-                className="mr-2"
-                onChange={() => updateFilters("fuelType", fuelType)}
-              />
-              {fuelType}
-            </label>
-          ))}
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("fuelType", "CNG")}
+            />
+            CNG
+          </label>
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("fuelType", "Electric")}
+            />
+            Electric
+          </label>
+          <label className="flex items-center mb-2 text-sm">
+            <input
+              type="checkbox"
+              className="mr-2"
+              onChange={() => updateFilters("fuelType", "PETROL")}
+            />
+            PETROL
+          </label>
         </div>
         <div className="mb-6">
           <h4 className="font-semibold mb-2 text-sm text-gray-700">Location</h4>
@@ -306,11 +339,9 @@ const BikeListPage = () => {
             onChange={(e) => updateFilters("location", e.target.value)}
           >
             <option value="">All</option>
-            {filters.locations.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
-              </option>
-            ))}
+            <option value={staticLocation1}>{staticLocation1}</option>
+            <option value={staticLocation2}>{staticLocation2}</option>
+            <option value={staticLocation3}>{staticLocation3}</option>
           </select>
         </div>
         <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By</h4>
@@ -367,7 +398,7 @@ const BikeListPage = () => {
                   <span className="text-green-500 mr-1">
                     <FaMapMarkerAlt />
                   </span>
-                  <p className="text-sm text-gray-600">{bike.storeName}</p>
+                  <p className="text-sm text-gray-600">{bike.storeName}</p> {/* Display store name */}
                 </div>
 
                 <div className="flex items-center mt-3">

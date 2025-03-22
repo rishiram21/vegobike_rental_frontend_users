@@ -27,9 +27,18 @@ const BikeDetailsPage = () => {
   const [rentalDays, setRentalDays] = useState(1);
 
   useEffect(() => {
+    const token = localStorage.getItem("jwtToken");
+    console.log("BikeDetailsPage - Token in localStorage:", token);
+    if (token) {
+      setIsLoggedIn(true);
+    }
+
     if (bike.categoryId) {
       fetchPackages(bike.categoryId);
     }
+
+    // Scroll to top when the component mounts
+    window.scrollTo(0, 0);
   }, [bike.categoryId]);
 
   const fetchPackages = async (categoryId) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaPhoneAlt, FaBars, FaTimes, FaMotorcycle } from "react-icons/fa";
 import { HiOutlineCalendarDays } from "react-icons/hi2";
 import { IoLocationOutline } from "react-icons/io5";
@@ -10,6 +10,10 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userData, setUserData] = useState(null);
+
+  const navigate = useNavigate();
 
   // Create refs for the dropdown and button
   const dropdownRef = useRef(null);
@@ -23,7 +27,6 @@ const Navbar = () => {
       setFormData(storedData);
     } else {
       console.log("No data found in localStorage.");
-      // Don't set empty data back to formData
     }
 
     // Add scroll event listener
@@ -41,12 +44,35 @@ const Navbar = () => {
 
   // Save formData to localStorage whenever it changes
   useEffect(() => {
-    // Only save to localStorage if formData has actual content
     if (formData && Object.keys(formData).length > 0) {
       console.log("Saving data to localStorage:", formData);
       localStorage.setItem("formData", JSON.stringify(formData));
     }
   }, [formData]);
+
+  // Check if the user is logged in and fetch user data
+  useEffect(() => {
+    const token = localStorage.getItem("jwtToken");
+    if (token) {
+      setIsLoggedIn(true);
+      // Load user data from localStorage
+      const storedUserData = JSON.parse(localStorage.getItem("userData"));
+      if (storedUserData) {
+        setUserData(storedUserData);
+      } else {
+        // Fetch user data from API if not in localStorage
+        // This is where you would typically make an API call to get user profile data
+        // For example:
+        // fetchUserData(token).then(data => {
+        //   setUserData(data);
+        //   localStorage.setItem("userData", JSON.stringify(data));
+        // });
+      }
+    } else {
+      setIsLoggedIn(false);
+      setUserData(null);
+    }
+  }, []);
 
   // Add click outside listener to close dropdown
   useEffect(() => {
@@ -108,6 +134,14 @@ const Navbar = () => {
     return `${day}/${month}/${year}`;
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("userData");
+    setIsLoggedIn(false);
+    setUserData(null);
+    navigate("/");
+  };
+
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white text-gray-800 shadow-lg' : 'bg-orange-600 text-white'}`}>
       <div className="container mx-auto px-4">
@@ -144,10 +178,12 @@ const Navbar = () => {
 
           {/* Right Side: Contact & Profile */}
           <div className="flex items-center space-x-4">
-            {/* Contact */}
+            {/* Contact - Now displays user's phone if logged in */}
             <div className={`hidden md:flex items-center space-x-2 ${isScrolled ? 'text-gray-800' : 'text-white'}`}>
               <FaPhoneAlt size={16} />
-              <span className="font-medium">+91 9545 237 823</span>
+              <span className="font-medium">
+                {isLoggedIn && userData?.phone ? userData.phone : "+91 9545 237 823"}
+              </span>
             </div>
 
             {/* Profile Dropdown */}
@@ -159,7 +195,9 @@ const Navbar = () => {
                 className={`flex items-center space-x-1 p-2 rounded-full ${isScrolled ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-orange-700 text-white hover:bg-orange-800'} transition-colors`}
               >
                 <FaUser />
-                <span className="hidden md:inline text-sm font-medium">Account</span>
+                <span className="hidden md:inline text-sm font-medium">
+                  {isLoggedIn && userData?.name ? userData.name : "Account"}
+                </span>
               </button>
 
               {isProfileDropdownOpen && (
@@ -189,13 +227,14 @@ const Navbar = () => {
                     Contact Us
                   </Link>
                   <div className="border-t border-gray-100 my-1"></div>
-                  <Link
-                    to="/"
-                    className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    onClick={() => setIsProfileDropdownOpen(false)}
-                  >
-                    Sign In
-                  </Link>
+                  {isLoggedIn && (
+                    <button
+                      onClick={handleLogout}
+                      className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Log Out
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -241,7 +280,7 @@ const Navbar = () => {
               My Profile
             </Link>
             <Link
-              to="/bookings"
+              to="/orders"
               className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
@@ -257,8 +296,16 @@ const Navbar = () => {
             <div className="border-t border-gray-200 my-2"></div>
             <div className="flex items-center px-3 py-3 text-gray-600">
               <FaPhoneAlt className="mr-3" />
-              <span>+91 9545 237 823</span>
+              <span>{isLoggedIn && userData?.phone ? userData.phone : "+91 9545 237 823"}</span>
             </div>
+            {isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className="block px-3 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-md"
+              >
+                Log Out
+              </button>
+            )}
           </div>
         </div>
       )}

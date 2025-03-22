@@ -26,6 +26,9 @@ const HomePage = () => {
   const [availableBikes, setAvailableBikes] = useState([]);
 
   useEffect(() => {
+    // Scroll to the top of the page when the component mounts
+    window.scrollTo(0, 0);
+
     const fetchCities = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/city/all`, {
@@ -45,6 +48,10 @@ const HomePage = () => {
     };
 
     fetchCities();
+  }, []);
+
+  useEffect(() => {
+    console.log("Home Page - Token in localStorage:", localStorage.getItem("jwtToken"));
   }, []);
 
   const fetchAvailableBikes = async () => {
@@ -121,60 +128,60 @@ const HomePage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
-    // Check if the selected date is in the past for startDate
+
+    // Check if the selected date and time is in the past for startDate
     if (name === 'startDate') {
       const selectedDate = new Date(value);
       const currentDate = new Date();
-      
+
       if (selectedDate < currentDate) {
-        // If selected date is in the past, set to current date
-        setFormData((prevData) => ({ 
-          ...prevData, 
+        // If selected date is in the past, set to current date and time
+        setFormData((prevData) => ({
+          ...prevData,
           [name]: formatDateForInput(roundToNextHour(currentDate))
         }));
-        setErrors((prevErrors) => ({ 
-          ...prevErrors, 
-          [name]: "Past dates cannot be selected. Date has been reset to current time." 
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          [name]: "Past dates and times cannot be selected. Date and time have been reset to current time."
         }));
         return;
       }
-      
+
       // If endDate is before the new startDate, update endDate
       if (formData.endDate && new Date(formData.endDate) < new Date(value)) {
         const newEndDate = new Date(value);
         newEndDate.setDate(newEndDate.getDate() + 1);
-        
-        setFormData((prevData) => ({ 
-          ...prevData, 
+
+        setFormData((prevData) => ({
+          ...prevData,
           [name]: value,
           endDate: formatDateForInput(newEndDate)
         }));
         return;
       }
     }
-    
+
     // For endDate, ensure it's after startDate
     if (name === 'endDate') {
       const startDate = new Date(formData.startDate);
       const selectedEndDate = new Date(value);
-      
+
       if (selectedEndDate <= startDate) {
         const newEndDate = new Date(startDate);
         newEndDate.setDate(startDate.getDate() + 1);
-        
-        setFormData((prevData) => ({ 
-          ...prevData, 
+
+        setFormData((prevData) => ({
+          ...prevData,
           [name]: formatDateForInput(newEndDate)
         }));
-        setErrors((prevErrors) => ({ 
-          ...prevErrors, 
-          [name]: "End date must be after start date. Date has been adjusted." 
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          [name]: "End date and time must be after start date and time. Date and time have been adjusted."
         }));
         return;
       }
     }
-    
+
     setFormData((prevData) => ({ ...prevData, [name]: value }));
     setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };

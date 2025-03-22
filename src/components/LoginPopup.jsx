@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 const LoginPopup = ({ onClose, openRegistration }) => {
@@ -9,6 +9,10 @@ const LoginPopup = ({ onClose, openRegistration }) => {
   const [error, setError] = useState("");
   const [alertMessage, setAlertMessage] = useState(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  
+  // Add refs for input fields
+  const mobileInputRef = useRef(null);
+  const otpInputRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -39,6 +43,13 @@ const LoginPopup = ({ onClose, openRegistration }) => {
 
       setOtpSent(true);
       showAlert("OTP sent successfully!");
+      
+      // Focus on OTP input after a short delay to allow rendering
+      setTimeout(() => {
+        if (otpInputRef.current) {
+          otpInputRef.current.focus();
+        }
+      }, 100);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -71,7 +82,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
       // Store JWT token in localStorage
       localStorage.setItem("jwtToken", data.token);
       
-      // Show success animation instead of alert
+      // Show success animation instead of text alert
       setShowSuccessAnimation(true);
       
       setTimeout(() => {
@@ -82,6 +93,14 @@ const LoginPopup = ({ onClose, openRegistration }) => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle key press events for both inputs
+  const handleKeyPress = (e, action) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      action();
     }
   };
 
@@ -271,6 +290,9 @@ const LoginPopup = ({ onClose, openRegistration }) => {
               value={mobile}
               onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
               maxLength={10}
+              ref={mobileInputRef}
+              onKeyPress={(e) => !otpSent && handleKeyPress(e, sendOTP)}
+              autoFocus
             />
 
             {!otpSent ? (
@@ -291,6 +313,8 @@ const LoginPopup = ({ onClose, openRegistration }) => {
                   className="border p-2 w-full mt-2"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                  ref={otpInputRef}
+                  onKeyPress={(e) => handleKeyPress(e, verifyOTP)}
                 />
                 <button
                   onClick={verifyOTP}
