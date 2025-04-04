@@ -17,7 +17,7 @@ const convertToWords = (amount) => {
 const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { addOrder } = useGlobalState();
+  const { addOrder, user } = useGlobalState(); // Assuming user is available in global state
 
   const [checkoutData, setCheckoutData] = useState(location.state || {});
   const [loadingData, setLoadingData] = useState(true);
@@ -37,32 +37,28 @@ const CheckoutPage = () => {
   useEffect(() => {
     const fetchCoupons = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/coupons`);
-        setCoupons([
-          { code: "SAVE10", discountPercentage: 10 },
-          { code: "RENT20", discountPercentage: 20 },
-          ...response.data
-        ]);
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/coupons/all`);
+        setCoupons(response.data);
       } catch (error) {
         console.error("Failed to fetch coupons:", error);
-        setCoupons([
-          { code: "SAVE10", discountPercentage: 10 },
-          { code: "RENT20", discountPercentage: 20 }
-        ]);
       } finally {
         setCouponLoading(false);
       }
     };
 
-    const sessionData = sessionStorage.getItem('checkoutData');
-    if (location.state) {
-      setCheckoutData(location.state);
-      sessionStorage.setItem('checkoutData', JSON.stringify(location.state));
-    } else if (sessionData) {
-      setCheckoutData(JSON.parse(sessionData));
-    }
+    const loadCheckoutData = () => {
+      const sessionData = sessionStorage.getItem("checkoutData");
+
+      if (location.state) {
+        setCheckoutData(location.state);
+        sessionStorage.setItem("checkoutData", JSON.stringify(location.state));
+      } else if (sessionData) {
+        setCheckoutData(JSON.parse(sessionData));
+      }
+    };
 
     fetchCoupons();
+    loadCheckoutData();
     setLoadingData(false);
   }, [location.state]);
 
@@ -99,24 +95,65 @@ const CheckoutPage = () => {
     }
   };
 
-  const handleApplyCoupon = () => {
-    // Prioritize text input over dropdown if both are filled
-    const codeToApply = couponCode.trim() || selectedCouponFromDropdown;
+  const handleApplyCoupon = async () => {
+    // Ensure couponCode and selectedCouponFromDropdown are valid strings before trimming
+    const trimmedCouponCode = couponCode ? couponCode.trim() : "";
+    const codeToApply = trimmedCouponCode || selectedCouponFromDropdown;
 
     if (!codeToApply) {
       setCouponError("Please enter a coupon code or select one from the dropdown.");
       return;
     }
 
-    const coupon = coupons.find(c => c.code.toUpperCase() === codeToApply.toUpperCase());
-    if (!coupon) {
-      setCouponError("Invalid coupon code.");
-      return;
-    }
+    // Prepare request payload
+    const payload = {
+      couponCode: codeToApply,
+      originalPrice: basePrice,
+      user: user.id, // Use the logged-in user's ID
+    };
 
-    setCouponError("");
-    setAppliedCoupon(coupon);
-    setDiscount((basePrice * coupon.discountPercentage) / 100);
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/coupons/apply`, payload);
+
+      if (response.status === 200) {
+        const appliedCouponData = coupons.find(coupon => coupon.couponCode === codeToApply);
+
+        if (appliedCouponData) {
+          let calculatedDiscount = 0;
+
+          // Log values for debugging
+          console.log("Base Price:", basePrice);
+          console.log("Coupon Data:", appliedCouponData);
+
+          if (appliedCouponData.couponType === 'PERCENTAGE') {
+            if (typeof basePrice === 'number' && typeof appliedCouponData.discountValue === 'number') {
+              calculatedDiscount = (basePrice * appliedCouponData.discountValue) / 100;
+            } else {
+              console.error("Invalid data types for percentage calculation.");
+            }
+          } else if (appliedCouponData.couponType === 'FIXED_VALUE') {
+            if (typeof appliedCouponData.discountValue === 'number') {
+              calculatedDiscount = appliedCouponData.discountValue;
+            } else {
+              console.error("Invalid data type for fixed value discount.");
+            }
+          }
+
+          // Log the calculated discount
+          console.log("Calculated Discount:", calculatedDiscount);
+
+          setAppliedCoupon(appliedCouponData);
+          setDiscount(calculatedDiscount);
+          setCouponError("");
+        } else {
+          setCouponError("Invalid coupon data.");
+        }
+      } else {
+        setCouponError("Failed to apply coupon. Please try again.");
+      }
+    } catch (error) {
+      setCouponError(error.response?.data || "Error applying coupon.");
+    }
   };
 
   const handleRemoveCoupon = () => {
@@ -133,7 +170,7 @@ const CheckoutPage = () => {
       setTimeout(() => setShowTermsError(false), 3000);
       return;
     }
-    
+
     setShowConfirmation(true);
   };
 
@@ -142,9 +179,26 @@ const CheckoutPage = () => {
     setIsProcessing(true);
 
     try {
+      // Fetch the logged-in user's ID using the token
+      const token = localStorage.getItem("jwtToken"); // Ensure you have stored the JWT token
+      if (!token) {
+        throw new Error("User is not logged in.");
+      }
+
+      const userResponse = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/booking/user/id`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const userId = userResponse.data; // Get user ID from response
+
       const bookingDetails = {
         vehicleId: bike.id,
-        userId: 2, // Replace with actual user ID
+        userId: userId, // Use the retrieved user ID
         packageId: selectedPackage.id,
         totalAmount: payableAmount,
         startTime: new Date(pickupDate).toISOString().replace("T", " ").slice(0, 19),
@@ -152,10 +206,18 @@ const CheckoutPage = () => {
         couponCode: appliedCoupon?.code || null,
         deliveryCharge: deliveryCharge,
         serviceCharge: serviceCharge,
-        depositAmount: depositAmount
+        depositAmount: depositAmount,
       };
 
-      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/booking/book`, bookingDetails);
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/booking/book`,
+        bookingDetails,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const completeOrder = {
         ...response.data,
@@ -167,9 +229,12 @@ const CheckoutPage = () => {
         addressDetails,
         pickupDate,
         dropDate,
-        status: response.data.status || "Confirmed"
+        status: response.data.status || "Confirmed",
       };
 
+      console.log("Booking confirmed:", completeOrder);
+
+      // Insert the previously commented-out booking confirmation code here
       setBookingConfirmed(true);
       addOrder({ completeOrder });
 
@@ -177,8 +242,8 @@ const CheckoutPage = () => {
         navigate("/orders", {
           state: {
             order: completeOrder,
-            checkoutData: checkoutData
-          }
+            checkoutData: checkoutData,
+          },
         });
       }, 5000);
 
@@ -186,6 +251,8 @@ const CheckoutPage = () => {
       console.error("Booking error:", error.response ? error.response.data : error.message);
       setIsProcessing(false);
       setBookingError(error.response?.data?.message || error.message);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -275,8 +342,8 @@ const CheckoutPage = () => {
                   >
                     <option value="">Select a Coupon</option>
                     {coupons.map((coupon) => (
-                      <option key={coupon.code} value={coupon.code}>
-                        {coupon.code} - {coupon.discountPercentage}% OFF
+                      <option key={coupon.couponId} value={coupon.couponCode}>
+                        {coupon.couponCode} - {coupon.couponType === 'PERCENTAGE' ? `${coupon.discountValue}% OFF` : `₹${coupon.discountValue} OFF`}
                       </option>
                     ))}
                   </select>
@@ -308,7 +375,7 @@ const CheckoutPage = () => {
                 {appliedCoupon && (
                   <div className="bg-green-50 border border-green-200 rounded p-2 mt-2">
                     <p className="text-green-700 text-sm">
-                      Applied: {appliedCoupon.code} - {appliedCoupon.discountPercentage}% OFF
+                      Applied: {appliedCoupon.couponCode} - {appliedCoupon.couponType === 'PERCENTAGE' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`}
                     </p>
                     <button
                       onClick={handleRemoveCoupon}
@@ -337,11 +404,11 @@ const CheckoutPage = () => {
                   <span>₹{serviceCharge}</span>
                 </div>
                 <div className="flex justify-between text-pink-500">
-  <span>Security Deposit:</span>
-  <span className="text-green-500 font-semibold">
-  (Refundable after trip) ₹{depositAmount} 
-  </span>
-</div>
+                  <span>Security Deposit:</span>
+                  <span className="text-green-500 font-semibold">
+                    (Refundable after trip) ₹{depositAmount}
+                  </span>
+                </div>
                 <div className="flex justify-between text-pink-500">
                   <span>GST (18%):</span>
                   <span>₹{gstAmount.toFixed(2)}</span>
@@ -371,7 +438,7 @@ const CheckoutPage = () => {
               </div>
               <AnimatePresence>
                 {showTermsError && (
-                  <motion.div 
+                  <motion.div
                     className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -390,10 +457,10 @@ const CheckoutPage = () => {
                     : "bg-orange-500 hover:bg-orange-600 text-white"
                 }`}
               >
-                {isProcessing ? "Processing..." : `Confirm Booking : ₹${payableAmount.toFixed(2)}`}
+                {isProcessing ? "Processing..." : `Confirm Booking: ₹${payableAmount.toFixed(2)}`}
               </button>
               <p className="text-left mt-1 font-semibold">
-                {`Total Payment in Words: ${convertToWords(payableAmount)}`}
+                Total Payment in Words: {convertToWords(payableAmount)}
               </p>
             </div>
           </div>
@@ -409,7 +476,7 @@ const CheckoutPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
+            <motion.div
               className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full m-4"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
@@ -418,12 +485,12 @@ const CheckoutPage = () => {
             >
               <h3 className="text-xl font-bold text-gray-800 mb-4">Confirm Booking</h3>
               <p className="text-gray-600 mb-6">Are you sure you want to confirm your booking for {bike?.model}?</p>
-              
+
               <div className="bg-orange-50 border border-orange-200 p-3 rounded-md mb-6">
                 <p className="text-orange-700 font-medium">Total Amount: ₹{payableAmount.toFixed(2)}</p>
                 <p className="text-orange-600 text-sm">Duration: {rentalDays} Days</p>
               </div>
-              
+
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowConfirmation(false)}
@@ -452,7 +519,7 @@ const CheckoutPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
+            <motion.div
               className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full text-center"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -463,9 +530,9 @@ const CheckoutPage = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
-                <motion.div 
+                <motion.div
                   className="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center"
-                  animate={{ 
+                  animate={{
                     scale: [1, 1.1, 1],
                     boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 0px 20px rgba(34,197,94,0.4)", "0px 0px 0px rgba(0,0,0,0)"]
                   }}
@@ -474,8 +541,8 @@ const CheckoutPage = () => {
                   <FaClipboardCheck className="text-5xl text-green-500" />
                 </motion.div>
               </motion.div>
-              
-              <motion.h2 
+
+              <motion.h2
                 className="text-2xl font-bold mt-6 mb-2 text-gray-800"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -483,8 +550,8 @@ const CheckoutPage = () => {
               >
                 Booking Confirmed!
               </motion.h2>
-              
-              <motion.p 
+
+              <motion.p
                 className="text-gray-600 mb-6"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -492,17 +559,17 @@ const CheckoutPage = () => {
               >
                 Your booking for {bike?.model} has been successfully confirmed.
               </motion.p>
-              
+
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.8 }}
               >
                 <p className="text-sm text-gray-500">Redirecting to orders page...</p>
-                <motion.div 
+                <motion.div
                   className="h-1 bg-green-100 mt-4 rounded-full overflow-hidden"
                 >
-                  <motion.div 
+                  <motion.div
                     className="h-full bg-green-500"
                     initial={{ width: "0%" }}
                     animate={{ width: "100%" }}
@@ -524,7 +591,7 @@ const CheckoutPage = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
+            <motion.div
               className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full text-center"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -535,9 +602,9 @@ const CheckoutPage = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.5 }}
               >
-                <motion.div 
+                <motion.div
                   className="w-24 h-24 bg-red-100 rounded-full mx-auto flex items-center justify-center"
-                  animate={{ 
+                  animate={{
                     scale: [1, 1.1, 1],
                   }}
                   transition={{ duration: 1, repeat: 3 }}
@@ -545,8 +612,8 @@ const CheckoutPage = () => {
                   <FaExclamationTriangle className="text-5xl text-red-500" />
                 </motion.div>
               </motion.div>
-              
-              <motion.h2 
+
+              <motion.h2
                 className="text-2xl font-bold mt-6 mb-2 text-gray-800"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -554,8 +621,8 @@ const CheckoutPage = () => {
               >
                 Booking Failed
               </motion.h2>
-              
-              <motion.p 
+
+              <motion.p
                 className="text-gray-600 mb-6"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -563,7 +630,7 @@ const CheckoutPage = () => {
               >
                 {bookingError}
               </motion.p>
-              
+
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}

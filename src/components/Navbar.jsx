@@ -59,14 +59,6 @@ const Navbar = () => {
       const storedUserData = JSON.parse(localStorage.getItem("userData"));
       if (storedUserData) {
         setUserData(storedUserData);
-      } else {
-        // Fetch user data from API if not in localStorage
-        // This is where you would typically make an API call to get user profile data
-        // For example:
-        // fetchUserData(token).then(data => {
-        //   setUserData(data);
-        //   localStorage.setItem("userData", JSON.stringify(data));
-        // });
       }
     } else {
       setIsLoggedIn(false);
@@ -124,14 +116,16 @@ const Navbar = () => {
     };
   }, [isMobileMenuOpen]);
 
-  // Format date for display
-  const formatDate = (datetime) => {
+  // Format date and time for display
+  const formatDateTime = (datetime) => {
     if (!datetime) return "Select";
     const date = new Date(datetime);
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
   const handleLogout = () => {
@@ -169,7 +163,7 @@ const Navbar = () => {
                 <div className={`flex items-center space-x-1 ${isScrolled ? 'text-gray-600' : 'text-white'}`}>
                   <HiOutlineCalendarDays className="text-lg" />
                   <div className="text-sm font-medium">
-                    {formatDate(formData.startDate)} - {formatDate(formData.endDate)}
+                    {formatDateTime(formData.startDate)} - {formatDateTime(formData.endDate)}
                   </div>
                 </div>
               )}
@@ -182,7 +176,7 @@ const Navbar = () => {
             <div className={`hidden md:flex items-center space-x-2 ${isScrolled ? 'text-gray-800' : 'text-white'}`}>
               <FaPhoneAlt size={16} />
               <span className="font-medium">
-                {isLoggedIn && userData?.phone ? userData.phone : "+91 9545 237 823"}
+                {isLoggedIn && userData?.phoneNumber ? userData.phoneNumber : "+91 9545 237 823"}
               </span>
             </div>
 
@@ -266,7 +260,7 @@ const Navbar = () => {
             {formData.startDate && formData.endDate && (
               <div className="flex items-center px-3 py-2 text-gray-600">
                 <HiOutlineCalendarDays className="mr-2" />
-                <span className="text-sm">{formatDate(formData.startDate)} - {formatDate(formData.endDate)}</span>
+                <span className="text-sm">{formatDateTime(formData.startDate)} - {formatDateTime(formData.endDate)}</span>
               </div>
             )}
 
@@ -296,7 +290,7 @@ const Navbar = () => {
             <div className="border-t border-gray-200 my-2"></div>
             <div className="flex items-center px-3 py-3 text-gray-600">
               <FaPhoneAlt className="mr-3" />
-              <span>{isLoggedIn && userData?.phone ? userData.phone : "+91 9545 237 823"}</span>
+              <span>{isLoggedIn && userData?.phoneNumber ? userData.phoneNumber : "+91 9545 237 823"}</span>
             </div>
             {isLoggedIn && (
               <button
