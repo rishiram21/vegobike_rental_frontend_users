@@ -82,19 +82,15 @@ const ProfilePage = () => {
             <div className="p-6 space-y-4">
               <div className="space-y-4">
                 <ProfileDetail icon={<FaPhone />} label="Phone Number" value={userData.phoneNumber} />
-                <ProfileDetail icon={<FaEnvelope />} label="Email Address" value={userData.email} />
-                <ProfileDetail icon={<FaIdCard />} label="Aadhar Number" value={userData.aadharNumber} />
-                <ProfileDetail icon={<FaCalendar />} label="Account Created" value={new Date(userData.createdAt).toLocaleString()} />
-                <ProfileDetail icon={<FaShieldAlt />} label="Role" value={userData.role} />
-                <ProfileDetail icon={<FaUserCircle />} label="Username" value={userData.username} />
+                
               </div>
  
-              <button
+              {/* <button
                 className="mt-6 w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition-colors"
                 onClick={() => navigate("/edit-profile")}
               >
                 Edit Profile
-              </button>
+              </button> */}
             </div>
           </div>
         ) : (

@@ -20,8 +20,8 @@ const BikeListPage = () => {
   const [stores, setStores] = useState([]);
 
   // Define static locations as strings
-  const staticLocation1 = "OK Bikes Mangalvar Peth";
-  const staticLocation2 = "DK Store";
+  const staticLocation1 = "OK Bikes Mangalwar Peth";
+  const staticLocation2 = "Ok Bikes Bavdhan";
   const staticLocation3 = "OK Bikes Wakad";
 
   const { formData } = location.state || {};
@@ -217,7 +217,10 @@ const BikeListPage = () => {
   const indexOfFirstBike = indexOfLastBike - bikesPerPage;
   const currentBikes = filteredBikes.slice(indexOfFirstBike, indexOfLastBike);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo(0, 0); // Scroll to top when changing pages
+  };
 
   useEffect(() => {
     if (showFilters && filterRef.current) {
@@ -296,14 +299,7 @@ const BikeListPage = () => {
             />
             Ola
           </label>
-          <label className="flex items-center mb-2 text-sm">
-            <input
-              type="checkbox"
-              className="mr-2"
-              onChange={() => updateFilters("brands", "Yamaha")}
-            />
-            Yamaha
-          </label>
+          
         </div>
         <div className="mb-6">
           <h4 className="font-semibold mb-2 text-sm text-gray-700">Fuel Type</h4>
@@ -347,125 +343,140 @@ const BikeListPage = () => {
         <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By</h4>
         <div className="mb-6 flex flex-row gap-2">
           <button
-            className="block w-full bg-orange-300 text-white"
+            className="block w-full bg-orange-300 text-white py-2 px-4 rounded hover:bg-orange-400"
             onClick={() => handleSort("asc")}
           >
             Price: Low to High
           </button>
           <button
-            className="block w-full bg-orange-300 text-white"
+            className="block w-full bg-orange-300 text-white py-2 px-4 rounded hover:bg-orange-400"
             onClick={() => handleSort("desc")}
           >
             Price: High to Low
           </button>
         </div>
         <button
-          className="w-full p-2 bg-red-500 text-white"
+          className="w-full p-2 bg-red-500 text-white rounded hover:bg-red-600"
           onClick={resetFilters}
         >
           Reset Filters
         </button>
       </aside>
 
-      <main className="w-full lg:w-3/4 pl-0 lg:pl-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-96">
-            <FaSpinner className="animate-spin text-orange-500 text-4xl" />
-          </div>
-        ) : currentBikes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-            {currentBikes.map((bike) => (
-              <div
-                key={bike.id}
-                className="bg-white border p-4 shadow-md hover:shadow-xl transition-shadow rounded-lg"
-              >
-                <img
-                  src={bike.image || "/default-image.jpg"}
-                  alt={bike.model}
-                  className="w-full h-40 object-contain rounded-t-lg"
-                />
-                <div className="flex justify-between items-center mt-2">
-                  <h3 className="text-base font-medium truncate">
-                    {bike.model}
-                  </h3>
-                </div>
-                <p className="text-xs text-gray-600 mt-1 mb-3">
-                  Year: {bike.registrationYear || "Unknown"}
-                </p>
+      <main className="w-full lg:w-3/4 pl-0 lg:pl-6 flex flex-col min-h-screen">
+        {/* Main content area */}
+        <div className="flex-grow">
+          {loading ? (
+            <div className="flex justify-center items-center h-96">
+              <FaSpinner className="animate-spin text-orange-500 text-4xl" />
+            </div>
+          ) : currentBikes.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+              {currentBikes.map((bike) => (
+                <div
+                  key={bike.id}
+                  className="bg-white border p-4 shadow-md hover:shadow-xl transition-shadow rounded-lg flex flex-col h-full"
+                >
+                  {/* Fixed height container for image */}
+                  <div className="h-48 mb-3 flex items-center justify-center overflow-hidden bg-gray-50 rounded-t-lg">
+                    <img
+                      src={bike.image || "/default-image.jpg"}
+                      alt={bike.model}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-center mt-2">
+                      <h3 className="text-base font-medium truncate">
+                        {bike.model}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 mb-3">
+                      Year: {bike.registrationYear || "Unknown"}
+                    </p>
 
-                <h2>Available at</h2>
-                <div className="flex items-center">
-                  <span className="text-green-500 mr-1">
-                    <FaMapMarkerAlt />
-                  </span>
-                  <p className="text-sm text-gray-600">{bike.storeName}</p> {/* Display store name */}
-                </div>
+                    <h2 className="text-sm font-medium">Available at</h2>
+                    <div className="flex items-center">
+                      <span className="text-green-500 mr-1">
+                        <FaMapMarkerAlt />
+                      </span>
+                      <p className="text-sm text-gray-600">{bike.storeName}</p>
+                    </div>
 
-                <div className="flex items-center mt-3">
-                  <span className="text-sm font-semibold text-gray-700">
-                    Price:
-                  </span>
-                  <span className="text-lg font-bold ml-2">
-                    ₹{bike.perDayRent}/day
-                  </span>
+                    <div className="flex items-center mt-3">
+                      <span className="text-sm font-semibold text-gray-700">
+                        Price:
+                      </span>
+                      <span className="text-lg font-bold ml-2">
+                        ₹{bike.perDayRent}/day
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Fuel excluded, No distance limit
+                    </p>
+                  </div>
+                  {bike.id === staticBikeDetails.id ? (
+                    <button
+                      className="mt-3 w-full bg-gray-300 text-gray-700 py-2 px-2 rounded-lg"
+                      disabled
+                    >
+                      Coming Soon
+                    </button>
+                  ) : (
+                    <button
+                      className="mt-3 w-full bg-orange-500 text-white py-2 px-2 hover:bg-orange-600 transition-colors rounded-lg"
+                      onClick={() =>
+                        navigate(`/bike-details`, {
+                          state: {
+                            id: bike.id,
+                            model: bike.model,
+                            name: bike.name,
+                            img: bike.image,
+                            basePrice: bike.perDayRent,
+                            deposit: bike.deposit,
+                            registrationYear: bike.registrationYear,
+                            storeName: bike.storeName,
+                            categoryName: bike.categoryName,
+                            categoryId: bike.categoryId,
+                          },
+                        })
+                      }
+                    >
+                      Rent Now
+                    </button>
+                  )}
                 </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  Fuel excluded, No distance limit
-                </p>
-                {bike.id === staticBikeDetails.id ? (
-                  <button
-                    className="mt-3 w-full bg-gray-300 text-gray-700 py-2 px-2 rounded-lg"
-                    disabled
-                  >
-                    Coming Soon
-                  </button>
-                ) : (
-                  <button
-                    className="mt-3 w-full bg-orange-500 text-white py-2 px-2 hover:bg-orange-600 transition-colors rounded-lg"
-                    onClick={() =>
-                      navigate(`/bike-details`, {
-                        state: {
-                          id: bike.id,
-                          model: bike.model,
-                          name: bike.name,
-                          img: bike.image,
-                          basePrice: bike.perDayRent,
-                          deposit: bike.deposit,
-                          registrationYear: bike.registrationYear,
-                          storeName: bike.storeName,
-                          categoryName: bike.categoryName,
-                          categoryId: bike.categoryId,
-                        },
-                      })
-                    }
-                  >
-                    Rent Now
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500">No bikes available</p>
-        )}
-
-        <div className="flex justify-center items-center mt-6">
-          {[
-            ...Array(Math.ceil(filteredBikes.length / bikesPerPage)).keys(),
-          ].map((page) => (
-            <button
-              key={page + 1}
-              onClick={() => paginate(page + 1)}
-              className={`px-3 py-2 mx-1 border rounded-full ${
-                currentPage === page + 1
-                  ? "bg-orange-500 text-white"
-                  : "bg-white text-gray-700"
-              } hover:bg-orange-400 hover:text-white`}
-            >
-              {page + 1}
-            </button>
-          ))}
+              ))}
+            </div>
+          ) : (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-center text-gray-500">No bikes available</p>
+            </div>
+          )}
         </div>
+
+        {/* Pagination area - fixed at the bottom */}
+        {filteredBikes.length > 0 && (
+          <div className="mt-8 mb-4 py-4 border-t border-gray-200">
+            <div className="flex justify-center items-center">
+              {[
+                ...Array(Math.ceil(filteredBikes.length / bikesPerPage)).keys(),
+              ].map((page) => (
+                <button
+                  key={page + 1}
+                  onClick={() => paginate(page + 1)}
+                  className={`px-3 py-2 mx-1 border rounded-full ${
+                    currentPage === page + 1
+                      ? "bg-orange-500 text-white"
+                      : "bg-white text-gray-700"
+                  } hover:bg-orange-400 hover:text-white transition-colors`}
+                >
+                  {page + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
