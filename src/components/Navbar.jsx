@@ -12,8 +12,8 @@ const Navbar = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userData, setUserData] = useState(null);
-
   const navigate = useNavigate();
+  const refreshInterval = 60000; // 60 seconds
 
   // Create refs for the dropdown and button
   const dropdownRef = useRef(null);
@@ -52,19 +52,56 @@ const Navbar = () => {
 
   // Check if the user is logged in and fetch user data
   useEffect(() => {
-    const token = localStorage.getItem("jwtToken");
-    if (token) {
-      setIsLoggedIn(true);
-      // Load user data from localStorage
-      const storedUserData = JSON.parse(localStorage.getItem("userData"));
-      if (storedUserData) {
-        setUserData(storedUserData);
+    const fetchUserData = async () => {
+      const token = localStorage.getItem("jwtToken");
+      if (token) {
+        setIsLoggedIn(true);
+        try {
+          const response = await fetch(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch user profile");
+          }
+
+          const data = await response.json();
+          setUserData(data);
+
+          const serializedData = JSON.stringify(data);
+          if (serializedData.length > 5000000) {
+            throw new Error('Data size exceeds the limit');
+          }
+
+          localStorage.setItem("userData", serializedData);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          if (error.name === 'QuotaExceededError') {
+            console.warn('Storage quota exceeded. Clearing some data...');
+            localStorage.clear();
+            localStorage.setItem("userData", JSON.stringify(userData));
+          }
+          localStorage.removeItem("jwtToken");
+          setIsLoggedIn(false);
+          setUserData(null);
+          navigate("/login");
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserData(null);
       }
-    } else {
-      setIsLoggedIn(false);
-      setUserData(null);
-    }
-  }, []);
+    };
+
+    fetchUserData();
+
+    const intervalId = setInterval(fetchUserData, refreshInterval);
+
+    return () => clearInterval(intervalId);
+  }, [navigate]);
 
   // Add click outside listener to close dropdown
   useEffect(() => {

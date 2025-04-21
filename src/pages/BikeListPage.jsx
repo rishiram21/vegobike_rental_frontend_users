@@ -33,11 +33,11 @@ const BikeListPage = () => {
     image: "/ola.jpg",
     perDayRent: 399,
     deposit: 0, // Assuming no deposit mentioned
-    registrationYear: 2017,
+    registrationYear: 2023,
     storeName: staticLocation3,
     categoryName: "Scooter",
     categoryId: 1,
-    fuelType: "Electric",
+    fuelType: "ELECTRIC",
     brand: "Ola",
     vehicleType: "Scooter", // Ensure vehicleType is set
   };
@@ -315,9 +315,9 @@ const BikeListPage = () => {
             <input
               type="checkbox"
               className="mr-2"
-              onChange={() => updateFilters("fuelType", "Electric")}
+              onChange={() => updateFilters("fuelType", "ELECTRIC")}
             />
-            Electric
+            ELECTRIC
           </label>
           <label className="flex items-center mb-2 text-sm">
             <input
@@ -378,7 +378,7 @@ const BikeListPage = () => {
                   className="bg-white border p-4 shadow-md hover:shadow-xl transition-shadow rounded-lg flex flex-col h-full"
                 >
                   {/* Fixed height container for image */}
-                  <div className="h-48 mb-3 flex items-center justify-center overflow-hidden bg-gray-50 rounded-t-lg">
+                  <div className="h-48 mb-3 flex items-center justify-center overflow-hidden bg-white-50 rounded-t-lg">
                     <img
                       src={bike.image || "/default-image.jpg"}
                       alt={bike.model}
@@ -397,7 +397,7 @@ const BikeListPage = () => {
 
                     <h2 className="text-sm font-medium">Available at</h2>
                     <div className="flex items-center">
-                      <span className="text-green-500 mr-1">
+                      <span className="text-orange-500 mr-1">
                         <FaMapMarkerAlt />
                       </span>
                       <p className="text-sm text-gray-600">{bike.storeName}</p>

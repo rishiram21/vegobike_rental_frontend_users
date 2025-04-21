@@ -1,60 +1,108 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { FaMotorcycle, FaCalendarAlt, FaMapMarkerAlt, FaRupeeSign, FaUser, FaPhone } from "react-icons/fa";
+import { FaMotorcycle, FaCalendarAlt, FaMapMarkerAlt, FaRupeeSign, FaUser, FaPhone, FaUpload, FaEnvelope, FaIdCard, FaChevronDown } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { useGlobalState } from "../context/GlobalStateContext";
+import { useAuth } from "../context/AuthContext";
 
 const OrdersPage = () => {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const { addOrder, user } = useGlobalState();
   const [mostRecentOrder, setMostRecentOrder] = useState(null);
   const [otherOrders, setOtherOrders] = useState([]);
+  const [displayedOrders, setDisplayedOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showUploadPopup, setShowUploadPopup] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [images, setImages] = useState({
+    front: null,
+    left: null,
+    right: null,
+    back: null,
+  });
+  const [uploadType, setUploadType] = useState(null); // 'start' or 'end'
+  const [orderLimit, setOrderLimit] = useState(1);
+
+  const refreshInterval = 60000; // 60 seconds
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
+    console.log("Token from AuthContext:", token);
+  }, [token]);
 
-        // Retrieve JWT token from localStorage or sessionStorage
-        const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
-
-        if (!token) {
-          setError("User not authenticated. Please log in.");
-          setLoading(false);
-          return;
-        }
-
-        // Fetch order history
-        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/booking/user/bookings`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.data && response.data.length > 0) {
-          // Sort orders by bookingId (most recent first)
-          const sortedOrders = response.data.sort((a, b) => b.bookingId - a.bookingId);
-
-          // Separate the most recent order from the rest
-          const [recentOrder, ...remainingOrders] = sortedOrders;
-
-          setMostRecentOrder(recentOrder);
-          setOtherOrders(remainingOrders);
-        } else {
-          setError("No orders found for this user.");
-        }
-      } catch (err) {
-        console.error("Error fetching orders:", err);
-        setError("Failed to fetch order history. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
+  // Scroll to the top of the page when the component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+
+      // Retrieve JWT token from localStorage or sessionStorage
+      const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+      if (!token) {
+        setError("User not authenticated. Please log in.");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch order history
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/booking/user/bookings`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data && response.data.length > 0) {
+        // Sort orders by bookingId (most recent first)
+        const sortedOrders = response.data.sort((a, b) => b.bookingId - a.bookingId);
+        // Separate the most recent order from the rest
+        const [recentOrder, ...remainingOrders] = sortedOrders;
+
+        // Fetch combined details for each order
+        const combinedOrders = await Promise.all(sortedOrders.map(async (order) => {
+          const combinedResponse = await axios.get(`${import.meta.env.VITE_BASE_URL}/booking/combined/${order.bookingId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          return combinedResponse.data;
+        }));
+
+        setMostRecentOrder(combinedOrders[0]);
+        setOtherOrders(combinedOrders.slice(1));
+        setDisplayedOrders(combinedOrders.slice(1, orderLimit + 1));
+      } else {
+        setError("No orders found for this user.");
+      }
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      setError("Failed to fetch order history. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    const intervalId = setInterval(fetchOrders, refreshInterval);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Update displayed orders when orderLimit changes
+  useEffect(() => {
+    setDisplayedOrders(otherOrders.slice(0, orderLimit));
+  }, [otherOrders, orderLimit]);
+
+  // Function to load more orders
+  const handleLoadMore = () => {
+    setOrderLimit(prevLimit => prevLimit + 2);
+  };
 
   // Function to format date
   const formatDate = (dateString) => {
@@ -62,109 +110,458 @@ const OrdersPage = () => {
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
   };
 
-  // User Profile Card Component
-  const UserProfileCard = () => (
-    <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
-      <div className="p-4 border-b border-gray-100 bg-orange-50">
-        <h2 className="text-xl font-semibold text-gray-800">User Details</h2>
-      </div>
+  // Function to handle booking cancellation confirmation
+  const handleCancelBooking = (orderId) => {
+    toast(
+      <div className="flex flex-col items-center">
+        <p className="mb-4">Are you sure you want to cancel this booking?</p>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => {
+              toast.dismiss();
+              confirmCancelBooking(orderId);
+            }}
+            className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+          >
+            Yes
+          </button>
+          <button
+            onClick={toast.dismiss}
+            className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: false,
+        hideProgressBar: true,
+        closeOnClick: false,
+        draggable: false,
+        className: "custom-toast",
+      }
+    );
+  };
 
-      <div className="p-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center">
-          <div className="bg-orange-100 rounded-full p-4 mb-4 md:mb-0 md:mr-6">
-            <FaUser className="text-orange-600 text-2xl" />
-          </div>
+  // Function to confirm and execute booking cancellation
+  const confirmCancelBooking = async (orderId) => {
+    try {
+      const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
 
-          <div className="flex-1 space-y-4">
-            <div>
-              <p className="text-sm text-gray-500">Full Name</p>
-              <p className="font-medium text-gray-800">{user?.name || "N/A"}</p>
-            </div>
+      if (!token) {
+        setError("User not authenticated. Please log in.");
+        return;
+      }
 
-            <div className="flex flex-col md:flex-row md:space-x-6">
-              <div className="flex items-start space-x-3">
-                <FaPhone className="text-gray-400 mt-1" />
-                <div>
-                  <p className="text-sm text-gray-500">Phone</p>
-                  <p className="font-medium">{user?.phoneNumber || "N/A"}</p>
-                </div>
-              </div>
-            </div>
+      // Use the API from allBooking to cancel the booking
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_URL}/booking/cancel/${orderId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("Booking canceled successfully:", response.data);
+
+      // Update the orders state to reflect the cancellation
+      setMostRecentOrder((prevOrder) => (prevOrder.booking.bookingId === orderId ? { ...prevOrder, booking: { ...prevOrder.booking, status: "Cancelled" } } : prevOrder));
+      setOtherOrders((prevOrders) =>
+        prevOrders.map((order) => (order.booking.bookingId === orderId ? { ...order, booking: { ...order.booking, status: "Cancelled" } } : order))
+      );
+      setDisplayedOrders((prevOrders) =>
+        prevOrders.map((order) => (order.booking.bookingId === orderId ? { ...order, booking: { ...order.booking, status: "Cancelled" } } : order))
+      );
+
+      toast.success("Booking cancelled successfully!");
+
+      // Refresh the page
+      window.location.reload();
+    } catch (err) {
+      console.error("Error cancelling booking:", err);
+      setError("Failed to cancel booking. Please try again.");
+      toast.error("Failed to cancel booking. Please try again.");
+    }
+  };
+
+  // Function to handle start trip confirmation
+  const handleStartTrip = (order) => {
+    toast(
+      ({ closeToast }) => (
+        <div className="flex flex-col items-center">
+          <p className="mb-4 font-medium">Are you sure you want to start the trip?</p>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => {
+                closeToast(); // Close the toast manually
+                setSelectedOrder(order);
+                setUploadType("start");
+                setShowUploadPopup(true);
+              }}
+              className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition"
+            >
+              Yes
+            </button>
+            <button
+              onClick={closeToast}
+              className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition"
+            >
+              No
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  );
+      ),
+      {
+        position: "top-center",
+        autoClose: false,
+        hideProgressBar: true,
+        closeOnClick: false,
+        draggable: false,
+        closeButton: false,
+        className: "custom-toast",
+      }
+    );
+  };
+
+  // End Trip
+  const handleEndTrip = (order) => {
+    toast(
+      <div className="flex flex-col items-center">
+        <p className="mb-4">Are you sure you want to end the trip?</p>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => {
+              toast.dismiss();
+              setSelectedOrder(order);
+              setUploadType("end");
+              setShowUploadPopup(true); // Reuse the same popup for end trip
+            }}
+            className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+          >
+            Yes
+          </button>
+          <button
+            onClick={toast.dismiss}
+            className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+          >
+            No
+          </button>
+        </div>
+      </div>,
+      {
+        position: "top-center",
+        autoClose: false,
+        hideProgressBar: true,
+        closeOnClick: false,
+        draggable: false,
+        className: "custom-toast",
+      }
+    );
+  };
+
+  // Function to convert image to Base64
+  const handleImageUpload = (side, file) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Image = reader.result;
+
+      setImages((prevImages) => {
+        if (uploadType === "start") {
+          return { ...prevImages, [side]: base64Image };
+        } else if (uploadType === "end") {
+          return { ...prevImages, [`${side}_end`]: base64Image };
+        } else {
+          return prevImages;
+        }
+      });
+    };
+
+    if (file) {
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Start Trip Function to handle form submission
+  const handleStartTripSubmit = async () => {
+    const { front, left, right, back } = images;
+
+    if (front && left && right && back) {
+      // Prepare the payload
+      const payload = {
+        bookingId: selectedOrder.booking.bookingId, // Use bookingId here
+        frontImageBase64: front,
+        leftImageBase64: left,
+        rightImageBase64: right,
+        backImageBase64: back,
+      };
+
+      const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+      if (!token) {
+        alert("You are not logged in. Please login to start trip.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/booking/start-trip`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        let data;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          data = { message: await response.text() };
+        }
+
+        if (response.ok && data.message === "Trip started successfully") {
+          console.log("Trip started successfully"); // Debugging statement
+          toast.success("Trip started successfully!"); // Success toast
+
+          // Update the status of the most recent and other orders
+          setMostRecentOrder((prevOrder) =>
+            prevOrder.booking.bookingId === selectedOrder.booking.bookingId
+              ? { ...prevOrder, booking: { ...prevOrder.booking, status: "START_TRIP" } }
+              : prevOrder
+          );
+
+          setOtherOrders((prevOrders) =>
+            prevOrders.map((order) =>
+              order.booking.bookingId === selectedOrder.booking.bookingId
+                ? { ...order, booking: { ...order.booking, status: "START_TRIP" } }
+                : order
+            )
+          );
+
+          setDisplayedOrders((prevOrders) =>
+            prevOrders.map((order) =>
+              order.booking.bookingId === selectedOrder.booking.bookingId
+                ? { ...order, booking: { ...order.booking, status: "START_TRIP" } }
+                : order
+            )
+          );
+
+          // Refresh the page
+          window.location.reload();
+        } else {
+          toast.error("Error starting trip: " + (data.message || "Unexpected error"));
+        }
+      } catch (error) {
+        toast.error("Error: " + error.message);
+      } finally {
+        setShowUploadPopup(false); // Close the upload popup in all cases
+      }
+    } else {
+      toast.error("Please upload all 4 images.");
+    }
+  };
+
+  // End Trip
+  const handleEndTripSubmit = async () => {
+    const { front_end, left_end, right_end, back_end } = images; // Assuming you store end images in the `images` state
+
+    if (front_end && left_end && right_end && back_end) {
+      const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+      if (!token) {
+        alert("You are not logged in. Please login to end trip.");
+        return;
+      }
+
+      const payload = {
+        bookingId: selectedOrder.booking.bookingId,
+        frontImageBase64: front_end,
+        leftImageBase64: left_end,
+        rightImageBase64: right_end,
+        backImageBase64: back_end,
+      };
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/booking/end-trip`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        let data;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          data = { message: await response.text() };
+        }
+
+        if (response.ok && data.message === "Trip ended successfully") {
+          console.log("Trip ended successfully"); // Debugging statement
+          toast.success("Trip ended successfully!"); // Success toast
+
+          setMostRecentOrder((prevOrder) =>
+            prevOrder.booking.bookingId === selectedOrder.booking.bookingId
+              ? { ...prevOrder, booking: { ...prevOrder.booking, status: "END_TRIP" } }
+              : prevOrder
+          );
+
+          setOtherOrders((prevOrders) =>
+            prevOrders.map((order) =>
+              order.booking.bookingId === selectedOrder.booking.bookingId
+                ? { ...order, booking: { ...order.booking, status: "END_TRIP" } }
+                : order
+            )
+          );
+
+          setDisplayedOrders((prevOrders) =>
+            prevOrders.map((order) =>
+              order.booking.bookingId === selectedOrder.booking.bookingId
+                ? { ...order, booking: { ...order.booking, status: "END_TRIP" } }
+                : order
+            )
+          );
+
+          // Refresh the page
+          window.location.reload();
+        } else {
+          toast.error("Failed to end trip: " + (data.message || "Unexpected error"));
+        }
+      } catch (error) {
+        toast.error("Error: " + error.message);
+      } finally {
+        setShowUploadPopup(false);
+      }
+    } else {
+      toast.error("Please upload all 4 images before submitting.");
+    }
+  };
 
   // Order card component to avoid duplication
   const OrderCard = ({ order }) => (
     <div className="bg-white rounded-lg shadow-md mb-6 overflow-hidden">
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <FaMotorcycle className="text-orange-600 text-lg" />
-            <h3 className="font-medium text-gray-800">{order.vehicleName || "N/A"}</h3>
+      <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+        <div className="flex items-center space-x-3">
+          <img
+            src={order.vehicle.image || "path/to/default/bike/image.jpg"}
+            alt={order.vehicle.model}
+            className="w-12 h-12 object-cover rounded-full"
+          />
+          <div>
+            <h3 className="font-medium text-gray-800">{order.vehicle.model || "N/A"}</h3>
+            <p className="text-sm text-gray-500">Bike Number: {order.vehicle.vehicleRegistrationNumber || "N/A"}</p>
           </div>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium
-            ${order.status === "Completed" ? "bg-green-100 text-green-800" :
-            order.status === "Upcoming" ? "bg-blue-100 text-blue-800" :
-            order.status === "Active" ? "bg-yellow-100 text-yellow-800" :
-            order.status === "Cancelled" ? "bg-red-100 text-red-800" :
-            "bg-gray-100 text-gray-800"}`}>
-            {order.status || "N/A"}
-          </span>
         </div>
+        <span className={`px-3 py-1 rounded-full text-sm font-medium
+          ${order.booking.status === "COMPLETED" ? "bg-green-100 text-green-800" :
+          order.booking.status === "Upcoming" ? "bg-blue-100 text-blue-800" :
+          order.booking.status === "Active" ? "bg-yellow-100 text-yellow-800" :
+          order.booking.status === "CANCELLED" ? "bg-red-100 text-red-800" :
+          order.booking.status === "BOOKING_ACCEPTED" ? "bg-purple-100 text-purple-800" :
+          order.booking.status === "START_TRIP" ? "bg-orange-100 text-orange-800" :
+          order.booking.status === "END_TRIP" ? "bg-gray-100 text-gray-800" :
+          "bg-gray-100 text-gray-800"}`}>
+          {order.booking.status || "N/A"}
+        </span>
       </div>
-
       <div className="p-4 space-y-3">
-        <div className="flex items-start space-x-3">
-          <FaCalendarAlt className="text-gray-400 mt-1" />
-          <div>
-            <p className="text-sm text-gray-500">Order Date</p>
-            <p className="font-medium">{formatDate(order.orderDate || order.createdAt)}</p>
+        <div className="flex flex-col space-y-2">
+          <p className="text-sm text-gray-500">Booking Details</p>
+          <p className="font-medium">Booking ID: {order.booking.bookingId || "N/A"}</p>
+          <p className="font-medium">Store Address: {order.store.address || "N/A"}</p>
+          <p className="font-medium">Store Mobile Number: {order.store.phone || "N/A"}</p>
+        </div>
+        <div className="flex justify-between items-center">
+          <div className="flex items-start space-x-3">
+            <FaCalendarAlt className="text-gray-400 mt-1" />
+            <div>
+              <p className="text-sm text-gray-500">Start Date</p>
+              <p className="font-medium">{formatDate(order.booking.startDate)}</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <FaCalendarAlt className="text-gray-400 mt-1" />
+            <div>
+              <p className="text-sm text-gray-500">End Date</p>
+              <p className="font-medium">{formatDate(order.booking.endDate)}</p>
+            </div>
           </div>
         </div>
-
-        {/* Add Start Date (Pickup Date) */}
-        <div className="flex items-start space-x-3">
-          <FaCalendarAlt className="text-gray-400 mt-1" />
-          <div>
-            <p className="text-sm text-gray-500">Start Date</p>
-            <p className="font-medium">{formatDate(order.pickupDate || order.startTime)}</p>
-          </div>
-        </div>
-
-        {/* Add End Date (Drop Date) */}
-        <div className="flex items-start space-x-3">
-          <FaCalendarAlt className="text-gray-400 mt-1" />
-          <div>
-            <p className="text-sm text-gray-500">End Date</p>
-            <p className="font-medium">{formatDate(order.dropDate || order.endTime)}</p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <FaMapMarkerAlt className="text-gray-400 mt-1" />
-          <div>
-            <p className="text-sm text-gray-500">Rental Days</p>
-            <p className="font-medium">{order.rentalDays || "N/A"}</p>
-          </div>
-        </div>
-
         <div className="flex items-start space-x-3">
           <FaRupeeSign className="text-gray-400 mt-1" />
           <div>
             <p className="text-sm text-gray-500">Total Amount</p>
-            <p className="font-medium">₹{order.totalprice || order.totalAmount || "N/A"}</p>
+            <p className="font-medium">
+              ₹{order.booking.totalAmount ? Number(order.booking.totalAmount).toFixed(2) : "N/A"}
+            </p>
           </div>
         </div>
       </div>
-
-      <div className="px-4 py-3 bg-gray-50 flex justify-between">
-        <p className="text-sm text-gray-500">Order ID: {order.id || order.bookingId || "N/A"}</p>
-        <Link to={`/order/${order.id}`} className="text-sm font-medium text-orange-600 hover:text-orange-800">
-          View Order Details
-        </Link>
+      {/* View Documents and Start Trip/Cancel Booking Buttons */}
+      <div className="p-4 border-t border-gray-100 flex justify-between items-center">
+        {order.booking.status === "BOOKING_ACCEPTED" && (
+          <button
+            onClick={() => handleStartTrip(order)}
+            className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+          >
+            Start Trip
+          </button>
+        )}
+        {order.booking.status === "START_TRIP" && (
+          <>
+            <button
+              onClick={() => handleEndTrip(order)}
+              className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+              disabled={order.booking.status === "END_TRIP"} // Disable if status is END_TRIP
+            >
+              End Trip
+            </button>
+            {/* <button
+              className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 ml-2"
+            >
+              View Documents
+            </button> */}
+          </>
+        )}
+        {order.booking.status === "END_TRIP" && (
+          <button
+            disabled
+            className="bg-gray-300 text-gray-600 py-2 px-4 rounded cursor-not-allowed"
+          >
+            End Trip
+          </button>
+        )}
+        {order.booking.status === "CANCELLED" ? (
+          <button
+            disabled
+            className="bg-gray-300 text-gray-600 py-2 px-4 rounded cursor-not-allowed"
+          >
+            Cancelled
+          </button>
+        ) : (
+          order.booking.status !== "COMPLETED" && order.booking.status !== "BOOKING_ACCEPTED" && order.booking.status !== "START_TRIP" && order.booking.status !== "END_TRIP" && (
+            <button
+              onClick={() => handleCancelBooking(order.booking.bookingId)}
+              className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+            >
+              Cancel Booking
+            </button>
+          )
+        )}
+        {order.booking.status === "COMPLETED" && (
+          <button
+            className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600"
+          >
+            View Invoice
+          </button>
+        )}
       </div>
     </div>
   );
@@ -191,13 +588,10 @@ const OrdersPage = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50">
+    <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50 relative">
+      <ToastContainer />
       <div className="container mx-auto max-w-6xl">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">My Orders</h1>
-
-        {/* User Profile Card */}
-        {user && <UserProfileCard />}
-
         {mostRecentOrder === null && otherOrders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <h2 className="text-2xl font-bold mb-4">No Orders Found</h2>
@@ -208,30 +602,11 @@ const OrdersPage = () => {
           </div>
         ) : (
           <div className="flex flex-col md:flex-row gap-6">
-            {/* Other Orders Column */}
-            <div className="w-full md:w-1/2">
-              <h2 className="text-xl font-semibold mb-4 pb-2 border-b-2 border-gray-500">
-                All Other Orders
-                <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
-                  {otherOrders.length}
-                </span>
-              </h2>
-
-              {otherOrders.length > 0 ? (
-                otherOrders.map((order) => <OrderCard key={order.id || order._id} order={order} />)
-              ) : (
-                <div className="bg-white rounded-lg shadow-md p-6 text-center">
-                  <p className="text-gray-500">No other orders</p>
-                </div>
-              )}
-            </div>
-
             {/* Most Recent Order Column */}
             <div className="w-full md:w-1/2">
               <h2 className="text-xl font-semibold mb-4 pb-2 border-b-2 border-yellow-500">
                 Most Recent Order
               </h2>
-
               {mostRecentOrder ? (
                 <OrderCard order={mostRecentOrder} />
               ) : (
@@ -243,242 +618,124 @@ const OrdersPage = () => {
                 </div>
               )}
             </div>
+            {/* Other Orders Column */}
+            <div className="w-full md:w-1/2">
+              <h2 className="text-xl font-semibold mb-4 pb-2 border-b-2 border-gray-500 flex justify-between items-center">
+                <div>
+                  All Other Orders
+                  <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
+                    {otherOrders.length}
+                  </span>
+                </div>
+              </h2>
+              {otherOrders.length > 0 ? (
+                <>
+                  <div className="overflow-y-auto max-h-[500px] pr-2 scrollbar-thin scrollbar-thumb-orange-500 scrollbar-track-orange-100 mb-4">
+                    {displayedOrders.map((order) => (
+                      <OrderCard key={order.booking.bookingId || order._id} order={order} />
+                    ))}
+                  </div>
+
+                  {otherOrders.length > displayedOrders.length && (
+                    <div className="text-center mt-2">
+                      <button
+                        onClick={handleLoadMore}
+                        className="bg-orange-100 text-orange-700 px-4 py-2 rounded-full flex items-center justify-center mx-auto hover:bg-orange-200 transition-colors duration-300"
+                      >
+                        Load More <FaChevronDown className="ml-2" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="bg-white rounded-lg shadow-md p-6 text-center">
+                  <p className="text-gray-500">No other orders</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
+
+      {/* Upload Popup */}
+      {showUploadPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">
+              {uploadType === "start" ? "Start Trip - Upload Images" : "End Trip - Upload Images"}
+            </h2>
+            <p className="mb-4">
+              Please upload 4 images of the vehicle {uploadType === "start" ? "before starting" : "after ending"} the trip.
+            </p>
+
+            {/* Front */}
+            <div className="mb-4">
+              <label className="block mb-2">Front Side</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload("front", e.target.files[0])}
+                className="mb-4"
+                required
+              />
+            </div>
+
+            {/* Left */}
+            <div className="mb-4">
+              <label className="block mb-2">Left Side</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload("left", e.target.files[0])}
+                className="mb-4"
+                required
+              />
+            </div>
+
+            {/* Right */}
+            <div className="mb-4">
+              <label className="block mb-2">Right Side</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload("right", e.target.files[0])}
+                className="mb-4"
+                required
+              />
+            </div>
+
+            {/* Back */}
+            <div className="mb-4">
+              <label className="block mb-2">Back Side</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload("back", e.target.files[0])}
+                className="mb-4"
+                required
+              />
+            </div>
+
+            <div className="flex justify-between">
+              {/* Conditionally call the correct handler */}
+              <button
+                onClick={uploadType === "start" ? handleStartTripSubmit : handleEndTripSubmit}
+                className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+              >
+                {uploadType === "start" ? "Start Trip" : "End Trip"}
+              </button>
+              <button
+                onClick={() => setShowUploadPopup(false)}
+                className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default OrdersPage;
-
-
-
-
-// import React, { useState, useEffect } from "react";
-// import { useLocation, useNavigate, Link } from "react-router-dom";
-// import axios from "axios";
-// import { FaMotorcycle, FaCalendarAlt, FaMapMarkerAlt, FaRupeeSign } from "react-icons/fa";
-
-// const OrdersPage = () => {
-//   const location = useLocation();
-//   const navigate = useNavigate();
-//   const [orderDetails, setOrderDetails] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
-//   const [fetchStatus, setFetchStatus] = useState("Initializing...");
-//   const [checkoutData, setCheckoutData] = useState(null);
-
-//   useEffect(() => {
-//     const fetchOrderData = async () => {
-//       try {
-//         setLoading(true);
-//         setFetchStatus("Starting fetch process...");
-
-//         // Check if user is logged in
-//         const token = localStorage.getItem("jwtToken");
-//         if (!token) {
-//           navigate("/login");
-//           return;
-//         }
-
-//         if (location.state && location.state.order) {
-//           setFetchStatus("Order data found in navigation state");
-//           setOrderDetails(location.state.order);
-//           setCheckoutData(location.state.checkoutData);
-//           setLoading(false);
-//           return;
-//         }
-
-//         const orderId = location.state?.order?.id || sessionStorage.getItem('lastOrderId');
-
-//         if (orderId) {
-//           sessionStorage.setItem('lastOrderId', orderId);
-//           setFetchStatus(`Fetching order details for ID: ${orderId}`);
-//           const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/booking/${orderId}`, {
-//             headers: {
-//               Authorization: `Bearer ${token}`,
-//             },
-//           });
-
-//           if (response.data) {
-//             setFetchStatus("Order details retrieved successfully");
-//             setOrderDetails(response.data);
-//           } else {
-//             setFetchStatus("API returned no data");
-//             setError("No order details returned from API");
-//           }
-//         } else {
-//           const userId = 2; // Replace with actual user ID logic if needed
-//           setFetchStatus(`Fetching all orders for user ID: ${userId}`);
-//           const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/booking/user/${userId}`, {
-//             headers: {
-//               Authorization: `Bearer ${token}`,
-//             },
-//           });
-
-//           if (response.data && response.data.length > 0) {
-//             setFetchStatus(`Found ${response.data.length} orders, using most recent`);
-//             setOrderDetails(response.data[0]);
-//           } else {
-//             setFetchStatus("No orders found for this user");
-//             setError("No orders found for this user");
-//           }
-//         }
-//       } catch (err) {
-//         setFetchStatus(`Error occurred: ${err.message}`);
-//         setError(err.message || "Failed to fetch order details");
-//       } finally {
-//         setLoading(false);
-//         window.scrollTo(0, 0); // Scroll to top
-//       }
-//     };
-
-//     fetchOrderData();
-//   }, [location.state, navigate]);
-
-//   // Format date for display
-//   const formatDate = (dateString) => {
-//     if (!dateString) return "N/A";
-//     const date = new Date(dateString);
-//     if (isNaN(date)) return "Invalid Date";
-//     const day = String(date.getDate()).padStart(2, "0");
-//     const month = String(date.getMonth() + 1).padStart(2, "0");
-//     const year = date.getFullYear();
-//     return `${day}/${month}/${year}`;
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen pt-20 px-4 flex justify-center items-center">
-//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-//         <p className="mt-4 text-gray-600">{fetchStatus}</p>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50 text-center">
-//         <h2 className="text-2xl font-bold mb-4">Error Loading Order</h2>
-//         <p className="text-red-500 mb-4">{error}</p>
-//         <p className="mb-4">{fetchStatus}</p>
-//         <Link to="/" className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600">
-//           Return to Home
-//         </Link>
-//       </div>
-//     );
-//   }
-
-//   if (!orderDetails) {
-//     return (
-//       <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50 text-center">
-//         <h2 className="text-2xl font-bold mb-4">No Order Details Found</h2>
-//         <p className="mb-4">We couldn't find any order information.</p>
-//         <p className="mb-4">{fetchStatus}</p>
-//         <Link to="/" className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600">
-//           Return to Home
-//         </Link>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50">
-//       <div className="container mx-auto max-w-3xl">
-//         <h1 className="text-3xl font-bold text-gray-800 mb-6">Order Details</h1>
-//         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-//           <div className="p-4 border-b border-gray-100">
-//             <div className="flex justify-between items-center">
-//               <div className="flex items-center space-x-3">
-//                 <FaMotorcycle className="text-orange-600 text-lg" />
-//                 <h3 className="font-medium text-gray-800">{orderDetails.bikeDetails?.model || "N/A"}</h3>
-//               </div>
-//               <span className={`px-3 py-1 rounded-full text-sm font-medium
-//                 ${orderDetails.status === 'Completed' ? 'bg-green-100 text-green-800' :
-//                 orderDetails.status === 'Upcoming' ? 'bg-blue-100 text-blue-800' :
-//                 orderDetails.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
-//                 'bg-gray-100 text-gray-800'}`}>
-//                 {orderDetails.status || "N/A"}
-//               </span>
-//             </div>
-//           </div>
-
-//           <div className="p-4 space-y-3">
-//             <div className="flex items-start space-x-3">
-//               <FaCalendarAlt className="text-gray-400 mt-1" />
-//               <div>
-//                 <p className="text-sm text-gray-500">Order Date</p>
-//                 <p className="font-medium">{formatDate(orderDetails.orderDate || orderDetails.createdAt)}</p>
-//               </div>
-//             </div>
-
-//             <div className="flex items-start space-x-3">
-//               <FaMapMarkerAlt className="text-gray-400 mt-1" />
-//               <div>
-//                 <p className="text-sm text-gray-500">Rental Days</p>
-//                 <p className="font-medium">{orderDetails.rentalDays || "N/A"}</p>
-//               </div>
-//             </div>
-
-//             <div className="flex items-start space-x-3">
-//               <FaRupeeSign className="text-gray-400 mt-1" />
-//               <div>
-//                 <p className="text-sm text-gray-500">Total Amount</p>
-//                 <p className="font-medium">₹{orderDetails.totalPrice || orderDetails.totalAmount || "N/A"}</p>
-//               </div>
-//             </div>
-//           </div>
-
-//           <div className="px-4 py-3 bg-gray-50 flex justify-between">
-//             <p className="text-sm text-gray-500">Order ID: {orderDetails.id || orderDetails.bookingId || "N/A"}</p>
-//             <Link
-//               to={`/order/${orderDetails.id}`}
-//               className="text-sm font-medium text-orange-600 hover:text-orange-800"
-//             >
-//               View Order Details
-//             </Link>
-//           </div>
-//         </div>
-
-//         {checkoutData && (
-//           <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-//             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Checkout Details</h2>
-//             <div className="space-y-4">
-//               <div>
-//                 <h3 className="text-lg font-semibold text-gray-700">Bike Details</h3>
-//                 <p className="text-sm text-gray-600">Model: {checkoutData.bike?.model}</p>
-//                 <p className="text-sm text-gray-600">Package: {checkoutData.selectedPackage?.days} Days (₹{checkoutData.selectedPackage?.price}/day)</p>
-//                 <p className="text-sm text-gray-600">Duration: {checkoutData.rentalDays} Days</p>
-//               </div>
-//               <div>
-//                 <h3 className="text-lg font-semibold text-gray-700">Pickup/Drop Dates</h3>
-//                 <p className="text-sm text-gray-600">Pickup: {formatDate(checkoutData.pickupDate)}</p>
-//                 <p className="text-sm text-gray-600">Drop: {formatDate(checkoutData.dropDate)}</p>
-//               </div>
-//               <div>
-//                 <h3 className="text-lg font-semibold text-gray-700">Pickup Option</h3>
-//                 <p className="text-sm text-gray-600">{checkoutData.pickupOption}</p>
-//                 <p className="text-sm text-gray-600">{checkoutData.pickupOption === "Self Pickup" ? checkoutData.storeName : checkoutData.addressDetails?.fullAddress || "Our Store Location: Rental Street"}</p>
-//               </div>
-//               <div>
-//                 <h3 className="text-lg font-semibold text-gray-700">Price Details</h3>
-//                 <p className="text-sm text-gray-600">Base Price: ₹{checkoutData.basePrice}</p>
-//                 <p className="text-sm text-gray-600">Delivery Charge: ₹{checkoutData.deliveryCharge}</p>
-//                 <p className="text-sm text-gray-600">Convenience Fee: ₹{checkoutData.serviceCharge}</p>
-//                 <p className="text-sm text-gray-600">Security Deposit: ₹{checkoutData.depositAmount}</p>
-//                 <p className="text-sm text-gray-600">GST (18%): ₹{checkoutData.gstAmount?.toFixed(2) || "N/A"}</p>
-//                 {checkoutData.discount > 0 && (
-//                   <p className="text-sm text-gray-600">Discount: -₹{checkoutData.discount}</p>
-//                 )}
-//                 <p className="text-sm font-semibold text-gray-600">Total Payable: ₹{checkoutData.payableAmount?.toFixed(2) || "N/A"}</p>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default OrdersPage;

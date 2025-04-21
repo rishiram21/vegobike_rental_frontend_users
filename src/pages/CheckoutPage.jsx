@@ -33,6 +33,8 @@ const CheckoutPage = () => {
   const [couponError, setCouponError] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showTermsError, setShowTermsError] = useState(false);
+  const [documentMessage, setDocumentMessage] = useState("");
+  const refreshInterval = 60000; // 60 seconds
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -57,9 +59,20 @@ const CheckoutPage = () => {
       }
     };
 
+    const fetchCheckoutData = async () => {
+      const sessionData = sessionStorage.getItem("checkoutData");
+      if (sessionData) {
+        setCheckoutData(JSON.parse(sessionData));
+      }
+    };
+
     fetchCoupons();
     loadCheckoutData();
     setLoadingData(false);
+
+    const intervalId = setInterval(fetchCheckoutData, refreshInterval);
+
+    return () => clearInterval(intervalId);
   }, [location.state]);
 
   const {
@@ -233,6 +246,9 @@ const CheckoutPage = () => {
       };
 
       console.log("Booking confirmed:", completeOrder);
+
+      // Set the document message
+      setDocumentMessage(response.data.documentMessage || "");
 
       // Insert the previously commented-out booking confirmation code here
       setBookingConfirmed(true);
@@ -512,75 +528,88 @@ const CheckoutPage = () => {
 
       {/* Success Animation */}
       <AnimatePresence>
-        {bookingConfirmed && (
+  {bookingConfirmed && (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full text-center"
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 15 }}
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            className="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center"
+            animate={{
+              scale: [1, 1.1, 1],
+              boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 0px 20px rgba(34,197,94,0.4)", "0px 0px 0px rgba(0,0,0,0)"]
+            }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
           >
-            <motion.div
-              className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full text-center"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", damping: 15 }}
-            >
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                <motion.div
-                  className="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center"
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 0px 20px rgba(34,197,94,0.4)", "0px 0px 0px rgba(0,0,0,0)"]
-                  }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                >
-                  <FaClipboardCheck className="text-5xl text-green-500" />
-                </motion.div>
-              </motion.div>
+            <FaClipboardCheck className="text-5xl text-green-500" />
+          </motion.div>
+        </motion.div>
 
-              <motion.h2
-                className="text-2xl font-bold mt-6 mb-2 text-gray-800"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                Booking Confirmed!
-              </motion.h2>
+        <motion.h2
+          className="text-2xl font-bold mt-6 mb-2 text-gray-800"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          Booking Confirmed!
+        </motion.h2>
 
-              <motion.p
-                className="text-gray-600 mb-6"
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                Your booking for {bike?.model} has been successfully confirmed.
-              </motion.p>
+        <motion.p
+          className="text-gray-600 mb-6"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          Your booking for {bike?.model} has been successfully confirmed.
+        </motion.p>
 
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.8 }}
-              >
-                <p className="text-sm text-gray-500">Redirecting to orders page...</p>
-                <motion.div
-                  className="h-1 bg-green-100 mt-4 rounded-full overflow-hidden"
-                >
-                  <motion.div
-                    className="h-full bg-green-500"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: 5, ease: "linear" }}
-                  />
-                </motion.div>
-              </motion.div>
-            </motion.div>
+        {documentMessage && (
+          <motion.div
+            className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            <p className="font-bold">Document Verification Message:</p>
+            <p>{documentMessage}</p>
           </motion.div>
         )}
-      </AnimatePresence>
+
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 1.0 }}
+        >
+          <p className="text-sm text-gray-500">Redirecting to orders page...</p>
+          <motion.div
+            className="h-1 bg-green-100 mt-4 rounded-full overflow-hidden"
+          >
+            <motion.div
+              className="h-full bg-green-500"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 5, ease: "linear" }}
+            />
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
 
       {/* Error Animation */}
       <AnimatePresence>

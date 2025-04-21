@@ -212,6 +212,8 @@ const HomePage = () => {
   );
   const [cities, setCities] = useState([]);
   const [availableBikes, setAvailableBikes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [lastFetchError, setLastFetchError] = useState(null);
 
   // Improved time handling function
   const formatDateForInput = (date) => {
@@ -260,6 +262,9 @@ const HomePage = () => {
       return;
     }
 
+    setLoading(true);
+    setLastFetchError(null);
+
     // Ensure full timestamp is sent to backend
     const startTime = new Date(formData.startDate).toISOString()
       .replace('T', ' ')
@@ -285,15 +290,18 @@ const HomePage = () => {
         setErrors({
           location: "No bikes available for the selected location and time.",
         });
-        return;
+        setAvailableBikes([]);
+      } else {
+        setAvailableBikes(bikesData);
       }
-
-      navigate("/bike-list", { state: { formData } });
     } catch (error) {
       console.error("Error fetching available bikes:", error);
+      setLastFetchError("Failed to fetch available bikes. Please try again.");
       setErrors({
         location: "Failed to fetch available bikes. Please try again.",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -309,6 +317,12 @@ const HomePage = () => {
       endDate: formatDateForInput(roundedEndDate),
     }));
   }, [setFormData]);
+
+  useEffect(() => {
+    if (formData.location && formData.startDate && formData.endDate) {
+      fetchAvailableBikes();
+    }
+  }, [formData.location, formData.startDate, formData.endDate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -336,7 +350,7 @@ const HomePage = () => {
         const newEndDate = new Date(value);
         newEndDate.setDate(newEndDate.getDate() + 1);
         // Preserve the time of the new start date
-        newEndDate.setHours(new Date(value).getHours(), 
+        newEndDate.setHours(new Date(value).getHours(),
                              new Date(value).getMinutes());
 
         setFormData((prevData) => ({
@@ -374,6 +388,7 @@ const HomePage = () => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
     setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };
+
   const handleCitySelection = (city) => {
     setFormData((prevData) => ({
       ...prevData,
@@ -385,7 +400,13 @@ const HomePage = () => {
   };
 
   const handleSearch = () => {
-    fetchAvailableBikes();
+    if (availableBikes.length > 0) {
+      navigate("/bike-list", { state: { formData } });
+    } else if (lastFetchError) {
+      setErrors({ location: lastFetchError });
+    } else {
+      fetchAvailableBikes();
+    }
   };
 
   const filteredCities = Array.isArray(cities)
@@ -479,10 +500,11 @@ const HomePage = () => {
               )}
             </div>
             <button
-              onClick={fetchAvailableBikes}
+              onClick={handleSearch}
               className="w-full bg-orange-700 text-white rounded-full py-2 px-4"
+              disabled={loading}
             >
-              Book Now
+              {loading ? "Loading..." : "Book Now"}
             </button>
           </div>
         </div>
@@ -664,3 +686,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+

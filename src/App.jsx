@@ -5,6 +5,7 @@ import BikeListPage from "./pages/BikeListPage";
 import HomePage from "./pages/HomePage"; // HomePage Component
 import BikeDetailsPage from "./pages/BikeDetailsPage"; // Bike Details Page
 import ProfilePage from "./pages/ProfilePage"; // Profile Page
+import LoginPage from "./pages/LoginPage";
 import OrdersPage from "./pages/OrdersPage"; // Orders Page
 import { FaWhatsapp } from "react-icons/fa";
 import Footer from "./components/Footer";
@@ -64,6 +65,8 @@ const App = () => {
               {/* Profile Page Route */}
               <Route path="/profile" element={<ProfilePage />} />
 
+              <Route path="/login" element={<LoginPage />} />
+
               {/* Orders Page Route */}
               <Route path="/orders" element={<OrdersPage />} />
 
@@ -75,15 +78,15 @@ const App = () => {
 
               {/* Catch-all for invalid routes */}
               <Route path="*" element={
-  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
-    <h1 className="text-4xl font-bold text-gray-800 mb-2">404</h1>
-    <h2 className="text-2xl font-semibold text-gray-700 mb-4">Page Not Found</h2>
-    <p className="text-gray-600 mb-8 text-center max-w-md">The page you are looking for might have been removed or is temporarily unavailable.</p>
-    <a href="/" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-      Return to Home
-    </a>
-  </div>
-} />
+              <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+                <h1 className="text-4xl font-bold text-gray-800 mb-2">404</h1>
+                <h2 className="text-2xl font-semibold text-gray-700 mb-4">Page Not Found</h2>
+                <p className="text-gray-600 mb-8 text-center max-w-md">The page you are looking for might have been removed or is temporarily unavailable.</p>
+                <a href="/" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                  Return to Home
+                </a>
+              </div>
+            } />
             </Routes>
             {/* Floating WhatsApp Icon */}
             <WhatsAppIcon />

@@ -4,6 +4,7 @@ import { FaMapMarkerAlt, FaCalendarAlt, FaTags } from "react-icons/fa";
 import { AiOutlinePlus, AiOutlineMinus, AiOutlineCaretDown, AiOutlineCaretUp } from "react-icons/ai";
 import LoginPopup from "../components/LoginPopup";
 import RegistrationPopup from "../components/RegistrationPopup";
+import { motion, AnimatePresence } from "framer-motion";
 
 const BikeDetailsPage = () => {
   const location = useLocation();
@@ -25,6 +26,8 @@ const BikeDetailsPage = () => {
     nearby: "",
   });
   const [rentalDays, setRentalDays] = useState(1);
+  const [showToast, setShowToast] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
@@ -87,6 +90,11 @@ const BikeDetailsPage = () => {
       return;
     }
 
+    // Show confirmation toast instead of proceeding immediately
+    setShowToast(true);
+  };
+
+  const confirmCheckout = () => {
     const deliveryCharge = pickupOption === "Delivery at Location" ? 250 : 0;
     const checkoutData = {
       bike,
@@ -105,10 +113,24 @@ const BikeDetailsPage = () => {
     if (!isLoggedIn) {
       sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
       setIsLoginPopupOpen(true);
+      setShowToast(false);
       return;
     }
 
-    navigate("/checkout", { state: checkoutData });
+    // Start the page transition animation
+    setIsAnimating(true);
+    
+    // Hide the toast
+    setShowToast(false);
+    
+    // Navigate after animation completes
+    setTimeout(() => {
+      navigate("/checkout", { state: checkoutData });
+    }, 600);
+  };
+
+  const cancelCheckout = () => {
+    setShowToast(false);
   };
 
   const handleLoginSuccess = () => {
@@ -128,7 +150,12 @@ const BikeDetailsPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-12 px-4 lg:px-6 mt-14">
+    <motion.div
+      initial={{ opacity: 1 }}
+      animate={{ opacity: isAnimating ? 0 : 1 }}
+      transition={{ duration: 0.6 }}
+      className="container mx-auto py-12 px-4 lg:px-6 mt-14"
+    >
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="flex flex-col shadow border items-center rounded-lg overflow-hidden">
           <img
@@ -236,7 +263,7 @@ const BikeDetailsPage = () => {
           </div>
 
           {showAddressPopup && (
-            <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+            <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
               <div className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
                 <h2 className="text-lg font-semibold">Enter Delivery Address</h2>
                 <div className="space-y-2">
@@ -333,7 +360,39 @@ const BikeDetailsPage = () => {
           )}
         </div>
       </div>
-    </div>
+
+      {/* Confirmation Toast */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white p-4 rounded-lg shadow-lg border-l-4 border-orange-400 z-50 w-80"
+          >
+            <div className="flex flex-col items-center">
+              <h3 className="text-lg font-semibold mb-2">Are you sure?</h3>
+              <p className="text-sm text-gray-600 mb-4">Ready to proceed with your bike rental?</p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={cancelCheckout}
+                  className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-all duration-300"
+                >
+                  No
+                </button>
+                <button
+                  onClick={confirmCheckout}
+                  className="flex-1 py-2 px-4 bg-orange-400 text-white rounded hover:bg-orange-500 transition-all duration-300"
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 
