@@ -59,11 +59,35 @@ export const GlobalStateProvider = ({ children }) => {
   }, [formData]);
 
   // Save orders to localStorage whenever they change
-  useEffect(() => {
-    if (orders && orders.length > 0) {
-      localStorage.setItem("orders", JSON.stringify(orders));
+  // useEffect(() => {
+  //   if (orders && orders.length > 0) {
+  //     localStorage.setItem("orders", JSON.stringify(orders));
+  //   }
+  // }, [orders]);
+
+  // Save orders to localStorage whenever they change
+useEffect(() => {
+  if (orders && orders.length > 0) {
+    try {
+      const orderData = JSON.stringify(orders);
+
+      // Check size in KB (localStorage limit is around 5MB)
+      const sizeInKB = new Blob([orderData]).size / 1024;
+      const maxSizeKB = 4500; // safe threshold
+
+      if (sizeInKB < maxSizeKB) {
+        localStorage.setItem("orders", orderData);
+      } else {
+        console.warn(`Order data too large (${Math.round(sizeInKB)} KB), not saving to localStorage.`);
+        // Optional: Store a trimmed version or alert the user
+      }
+
+    } catch (error) {
+      console.error("Error saving orders to localStorage:", error);
     }
-  }, [orders]);
+  }
+}, [orders]);
+
 
   // Save user data to localStorage whenever it changes
   useEffect(() => {
@@ -73,9 +97,21 @@ export const GlobalStateProvider = ({ children }) => {
   }, [user]);
 
   // Function to add a new order
+  // const addOrder = (order) => {
+  //   setOrders((prevOrders) => [...prevOrders, order]);
+  // };
   const addOrder = (order) => {
-    setOrders((prevOrders) => [...prevOrders, order]);
+    // Keep only essential fields to reduce localStorage size
+    const trimmedOrder = {
+      id: order.id,
+      bikeName: order.bikeName,
+      amount: order.amount,
+      date: order.date,
+    };
+  
+    setOrders((prevOrders) => [...prevOrders, trimmedOrder]);
   };
+  
 
   return (
     <GlobalStateContext.Provider value={{ formData, setFormData, orders, addOrder, user, setUser }}>

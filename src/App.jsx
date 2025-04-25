@@ -13,6 +13,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import { GlobalStateProvider } from "./context/GlobalStateContext";
 import ContactUs from "./pages/ContactUs"; // Import ContactUs Component
 import { AuthProvider } from "./context/AuthContext"; // Import AuthProvider
+import RegistrationPage from "./pages/RegistrationPage";
 
 // Wrapper to conditionally render the Navbar
 const ConditionalNavbar = ({ children }) => {
@@ -66,6 +67,9 @@ const App = () => {
               <Route path="/profile" element={<ProfilePage />} />
 
               <Route path="/login" element={<LoginPage />} />
+
+              <Route path="/register" element={<RegistrationPage />} />
+
 
               {/* Orders Page Route */}
               <Route path="/orders" element={<OrdersPage />} />

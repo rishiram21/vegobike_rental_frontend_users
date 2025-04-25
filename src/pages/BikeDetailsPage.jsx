@@ -17,8 +17,9 @@ const BikeDetailsPage = () => {
 
   const [packages, setPackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [oneDayPackage, setOneDayPackage] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [pickupOption, setPickupOption] = useState("Self Pickup");
+  const [pickupOption, setPickupOption] = useState("SELF_PICKUP");
   const [showAddressPopup, setShowAddressPopup] = useState(false);
   const [addressDetails, setAddressDetails] = useState({
     fullAddress: "",
@@ -44,15 +45,33 @@ const BikeDetailsPage = () => {
     window.scrollTo(0, 0);
   }, [bike.categoryId]);
 
+  useEffect(() => {
+    // Automatically select the package based on rental days
+    if (packages.length > 0) {
+      const packageForDays = packages.find(pkg => pkg.days === rentalDays);
+      if (packageForDays) {
+        setSelectedPackage(packageForDays);
+      } else {
+        setSelectedPackage(packages[0]);
+      }
+    }
+  }, [rentalDays, packages]);
+
   const fetchPackages = async (categoryId) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BASE_URL}/package/list/${categoryId}`);
       const data = await response.json();
-      setPackages(data);
 
-      if (data.length > 0) {
-        setSelectedPackage(data[0]);
-        setRentalDays(data[0].days);
+      // Filter active packages
+      const activePackages = data.filter(pkg => pkg.active);
+      setPackages(activePackages);
+
+      if (activePackages.length > 0) {
+        setRentalDays(activePackages[0].days);
+
+        // Find the 1-day package
+        const oneDayPkg = activePackages.find(pkg => pkg.days === 1);
+        setOneDayPackage(oneDayPkg);
       }
     } catch (error) {
       console.error("Error fetching packages:", error);
@@ -74,11 +93,36 @@ const BikeDetailsPage = () => {
     setRentalDays((prevDays) => Math.max(1, prevDays - 1));
   };
 
-  const totalPrice = selectedPackage
-    ? selectedPackage.price * rentalDays +
-      (pickupOption === "Delivery at Location" ? 250 : 0) +
-      serviceCharge
-    : 0;
+  // Calculate total price correctly
+  const calculateTotalPrice = () => {
+    if (!selectedPackage) return 0;
+
+    const packagePrice = selectedPackage.price;
+    const extraDays = rentalDays - selectedPackage.days;
+    const extraDaysPrice = extraDays > 0 ? extraDays * (oneDayPackage ? oneDayPackage.price : 0) : 0;
+    const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
+
+    return packagePrice + extraDaysPrice + deliveryCharge + serviceCharge;
+  };
+
+  const calculatePricePerDay = () => {
+    if (!selectedPackage) return 0;
+
+    const packagePricePerDay = selectedPackage.price / selectedPackage.days;
+    const extraDaysPricePerDay = oneDayPackage ? oneDayPackage.price : 0;
+
+    const totalDays = rentalDays;
+    const packageDays = selectedPackage.days;
+    const extraDays = totalDays - packageDays;
+
+    if (extraDays > 0) {
+      return (packagePricePerDay * packageDays + extraDaysPricePerDay * extraDays) / totalDays;
+    }
+
+    return packagePricePerDay;
+  };
+
+  const totalPrice = calculateTotalPrice();
 
   const handleAddressChange = (field, value) => {
     setAddressDetails((prevDetails) => ({ ...prevDetails, [field]: value }));
@@ -95,16 +139,17 @@ const BikeDetailsPage = () => {
   };
 
   const confirmCheckout = () => {
-    const deliveryCharge = pickupOption === "Delivery at Location" ? 250 : 0;
+    const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
     const checkoutData = {
       bike,
-      totalPrice: selectedPackage.price * rentalDays + deliveryCharge + serviceCharge,
+      totalPrice: calculateTotalPrice(),
       selectedPackage,
       rentalDays,
       addressDetails,
       pickupOption,
       deliveryCharge,
       serviceCharge,
+      pricePerDay: calculatePricePerDay(),
       pickupDate: new Date(),
       dropDate: new Date(Date.now() + (rentalDays * 24 * 60 * 60 * 1000)),
       storeName: bike.storeName || "Our Store Location: Rental Street",
@@ -119,10 +164,10 @@ const BikeDetailsPage = () => {
 
     // Start the page transition animation
     setIsAnimating(true);
-    
+
     // Hide the toast
     setShowToast(false);
-    
+
     // Navigate after animation completes
     setTimeout(() => {
       navigate("/checkout", { state: checkoutData });
@@ -237,9 +282,9 @@ const BikeDetailsPage = () => {
             </h3>
             <div className="flex gap-3">
               <button
-                onClick={() => setPickupOption("Self Pickup")}
+                onClick={() => setPickupOption("SELF_PICKUP")}
                 className={`py-2 px-4 border-2 rounded text-sm transition-all duration-300 ${
-                  pickupOption === "Self Pickup"
+                  pickupOption === "SELF_PICKUP"
                     ? "bg-orange-300 text-black border-orange-300"
                     : "bg-white text-black border-orange-300"
                 }`}
@@ -248,11 +293,11 @@ const BikeDetailsPage = () => {
               </button>
               <button
                 onClick={() => {
-                  setPickupOption("Delivery at Location");
+                  setPickupOption("DELIVERY_AT_LOCATION");
                   setShowAddressPopup(true);
                 }}
                 className={`py-2 px-4 border-2 rounded text-sm transition-all duration-300 ${
-                  pickupOption === "Delivery at Location"
+                  pickupOption === "DELIVERY_AT_LOCATION"
                     ? "bg-orange-300 text-black border-orange-300"
                     : "bg-white text-black border-orange-300"
                 }`}
@@ -317,17 +362,22 @@ const BikeDetailsPage = () => {
           <div className="mt-4 space-y-2">
             <h3 className="text-lg font-bold text-gray-800">Price Breakdown:</h3>
             <p className="text-sm text-gray-600">
-              <strong>Package Price:</strong> ₹{selectedPackage?.price || 0}
+              <strong>Package:</strong> {selectedPackage?.days || 0} Days (₹{selectedPackage?.price || 0})
             </p>
+            {/* {rentalDays > (selectedPackage?.days || 0) && (
+              <p className="text-sm text-gray-600">
+                <strong>Extra Days Cost:</strong> ₹{oneDayPackage?.price || 0} × {rentalDays - selectedPackage?.days} days = ₹{((oneDayPackage?.price || 0) * (rentalDays - selectedPackage?.days)).toFixed(2)}
+              </p>
+            )} */}
             <p className="text-sm text-gray-600">
-              <strong>Delivery Charge:</strong> ₹{pickupOption === "Delivery at Location" ? 250 : 0}
+              <strong>Delivery Charge:</strong> ₹{pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0}
             </p>
             <p className="text-sm text-gray-600">
               <strong>Convenience Charge:</strong> ₹{serviceCharge}
             </p>
             <hr className="my-2" />
             <h3 className="text-lg font-bold text-gray-800">
-              Total Price: ₹{totalPrice}
+              Total Price: ₹{totalPrice.toFixed(2)}
             </h3>
           </div>
 
@@ -364,7 +414,7 @@ const BikeDetailsPage = () => {
       {/* Confirmation Toast */}
       <AnimatePresence>
         {showToast && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}

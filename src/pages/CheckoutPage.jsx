@@ -35,6 +35,8 @@ const CheckoutPage = () => {
   const [showTermsError, setShowTermsError] = useState(false);
   const [documentMessage, setDocumentMessage] = useState("");
   const refreshInterval = 60000; // 60 seconds
+  const [deliveryOption, setDeliveryOption] = useState("SELF_PICKUP"); // or "delivery" as default
+
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -80,7 +82,7 @@ const CheckoutPage = () => {
     rentalDays = 1,
     selectedPackage = {},
     addressDetails = {},
-    pickupOption = "Self Pickup",
+    pickupOption = "SELF_PICKUP",
     pickupDate = new Date(),
     dropDate = new Date(),
     storeName = ""
@@ -190,14 +192,14 @@ const CheckoutPage = () => {
   const handleConfirmBooking = async () => {
     setShowConfirmation(false);
     setIsProcessing(true);
-
+  
     try {
       // Fetch the logged-in user's ID using the token
       const token = localStorage.getItem("jwtToken"); // Ensure you have stored the JWT token
       if (!token) {
         throw new Error("User is not logged in.");
       }
-
+  
       const userResponse = await axios.get(
         `${import.meta.env.VITE_BASE_URL}/booking/user/id`,
         {
@@ -206,22 +208,28 @@ const CheckoutPage = () => {
           },
         }
       );
-
+  
       const userId = userResponse.data; // Get user ID from response
-
+  
+      const isDeliverySelected = pickupOption === "DELIVERY_AT_LOCATION";
+  
       const bookingDetails = {
         vehicleId: bike.id,
-        userId: userId, // Use the retrieved user ID
+        userId: userId,
         packageId: selectedPackage.id,
         totalAmount: payableAmount,
-        startTime: new Date(pickupDate).toISOString().replace("T", " ").slice(0, 19),
-        endTime: new Date(dropDate).toISOString().replace("T", " ").slice(0, 19),
+        // startTime: new Date(pickupDate).toISOString().replace("T", " ").slice(0, 19),
+        // endTime: new Date(dropDate).toISOString().replace("T", " ").slice(0, 19),
+        startTime: new Date(pickupDate).toISOString().replace(/\..+/, ''), // Remove milliseconds and timezone offset
+        endTime: new Date(dropDate).toISOString().replace(/\..+/, ''), // Remove milliseconds and timezone offset
         couponCode: appliedCoupon?.code || null,
         deliveryCharge: deliveryCharge,
         serviceCharge: serviceCharge,
         depositAmount: depositAmount,
+        deliverySelected: isDeliverySelected,
+        deliveryLocation: isDeliverySelected ? JSON.stringify(addressDetails) : null, // Convert addressDetails to string if delivery is selected
       };
-
+  
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/booking/book`,
         bookingDetails,
@@ -231,47 +239,43 @@ const CheckoutPage = () => {
           },
         }
       );
-
+  
       const completeOrder = {
         ...response.data,
         bikeDetails: bike,
         totalPrice: payableAmount,
         rentalDays,
         selectedPackage,
-        pickupOption,
+        pickupOption, // Ensure pickupOption is included
         addressDetails,
         pickupDate,
         dropDate,
         status: response.data.status || "Confirmed",
       };
-
+  
       console.log("Booking confirmed:", completeOrder);
-
+  
       // Set the document message
       setDocumentMessage(response.data.documentMessage || "");
-
+  
       // Insert the previously commented-out booking confirmation code here
       setBookingConfirmed(true);
       addOrder({ completeOrder });
-
-      setTimeout(() => {
-        navigate("/orders", {
-          state: {
-            order: completeOrder,
-            checkoutData: checkoutData,
-          },
-        });
-      }, 5000);
-
+  
     } catch (error) {
-      console.error("Booking error:", error.response ? error.response.data : error.message);
+      console.error("Booking error:", error);
+      if (error.response) {
+        console.error("Response data:", error.response.data);
+        setBookingError(error.response.data.message || "An error occurred");
+      } else {
+        setBookingError(error.message || "An error occurred");
+      }
       setIsProcessing(false);
-      setBookingError(error.response?.data?.message || error.message);
     } finally {
       setIsProcessing(false);
     }
   };
-
+  
   const [bookingError, setBookingError] = useState("");
 
   const formatDate = (date) => {
@@ -329,7 +333,7 @@ const CheckoutPage = () => {
                 {pickupOption}
               </h3>
               <p className="text-sm text-gray-600">
-                {pickupOption === "Self Pickup" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
+                {pickupOption === "SELF_PICKUP" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
               </p>
             </div>
 
@@ -528,88 +532,62 @@ const CheckoutPage = () => {
 
       {/* Success Animation */}
       <AnimatePresence>
-  {bookingConfirmed && (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full text-center"
-        initial={{ scale: 0.5, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", damping: 15 }}
-      >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-        >
+        {bookingConfirmed && (
           <motion.div
-            className="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center"
-            animate={{
-              scale: [1, 1.1, 1],
-              boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 0px 20px rgba(34,197,94,0.4)", "0px 0px 0px rgba(0,0,0,0)"]
-            }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-          >
-            <FaClipboardCheck className="text-5xl text-green-500" />
-          </motion.div>
-        </motion.div>
-
-        <motion.h2
-          className="text-2xl font-bold mt-6 mb-2 text-gray-800"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          Booking Confirmed!
-        </motion.h2>
-
-        <motion.p
-          className="text-gray-600 mb-6"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          Your booking for {bike?.model} has been successfully confirmed.
-        </motion.p>
-
-        {documentMessage && (
-          <motion.div
-            className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
-          >
-            <p className="font-bold">Document Verification Message:</p>
-            <p>{documentMessage}</p>
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 1.0 }}
-        >
-          <p className="text-sm text-gray-500">Redirecting to orders page...</p>
-          <motion.div
-            className="h-1 bg-green-100 mt-4 rounded-full overflow-hidden"
+            className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
             <motion.div
-              className="h-full bg-green-500"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 5, ease: "linear" }}
-            />
-          </motion.div>
-        </motion.div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+              className="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full text-center"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", damping: 15 }}
+            >
+              <div className="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center">
+                <FaClipboardCheck className="text-5xl text-green-500" />
+              </div>
 
+              <h2 className="text-2xl font-bold mt-6 mb-2 text-gray-800">
+                Booking Confirmed!
+              </h2>
+
+              <p className="text-gray-600 mb-6">
+                Your booking for {bike?.model} has been successfully confirmed.
+              </p>
+
+              {documentMessage && (
+                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded">
+                  <p className="font-bold">Document Verification Message:</p>
+                  <p>{documentMessage}</p>
+                </div>
+              )}
+
+              <div className="flex justify-center space-x-4">
+                <button
+                  className="bg-green-500 text-white px-4 py-2 rounded"
+                  onClick={() => {
+                    // Handle OK button click and redirect to orders page
+                    navigate("/orders");
+                  }}
+                >
+                  OK
+                </button>
+                {/* <button
+                  className="bg-red-500 text-white px-4 py-2 rounded"
+                  onClick={() => {
+                    // Handle Cancel button click
+                    setBookingConfirmed(false);
+                  }}
+                >
+                  Cancel
+                </button> */}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Error Animation */}
       <AnimatePresence>
