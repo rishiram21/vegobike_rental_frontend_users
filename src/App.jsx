@@ -14,6 +14,7 @@ import { GlobalStateProvider } from "./context/GlobalStateContext";
 import ContactUs from "./pages/ContactUs"; // Import ContactUs Component
 import { AuthProvider } from "./context/AuthContext"; // Import AuthProvider
 import RegistrationPage from "./pages/RegistrationPage";
+import InvoicePage from "./pages/InvoicePage";
 
 // Wrapper to conditionally render the Navbar
 const ConditionalNavbar = ({ children }) => {
@@ -73,6 +74,8 @@ const App = () => {
 
               {/* Orders Page Route */}
               <Route path="/orders" element={<OrdersPage />} />
+
+              <Route path="/invoice/:bookingId" element={<InvoicePage />} />
 
               {/* Checkout Page Route */}
               <Route path="/checkout" element={<CheckoutPage />} />

@@ -5,11 +5,13 @@ import { AiOutlinePlus, AiOutlineMinus, AiOutlineCaretDown, AiOutlineCaretUp } f
 import LoginPopup from "../components/LoginPopup";
 import RegistrationPopup from "../components/RegistrationPopup";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGlobalState } from "../context/GlobalStateContext";
 
 const BikeDetailsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const bike = location.state || {};
+  const { formData, setFormData } = useGlobalState();
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
   const [isRegistrationPopupOpen, setIsRegistrationPopupOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,6 +31,7 @@ const BikeDetailsPage = () => {
   const [rentalDays, setRentalDays] = useState(1);
   const [showToast, setShowToast] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
@@ -96,12 +99,10 @@ const BikeDetailsPage = () => {
   // Calculate total price correctly
   const calculateTotalPrice = () => {
     if (!selectedPackage) return 0;
-
     const packagePrice = selectedPackage.price;
     const extraDays = rentalDays - selectedPackage.days;
     const extraDaysPrice = extraDays > 0 ? extraDays * (oneDayPackage ? oneDayPackage.price : 0) : 0;
     const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
-
     return packagePrice + extraDaysPrice + deliveryCharge + serviceCharge;
   };
 
@@ -110,7 +111,6 @@ const BikeDetailsPage = () => {
 
     const packagePricePerDay = selectedPackage.price / selectedPackage.days;
     const extraDaysPricePerDay = oneDayPackage ? oneDayPackage.price : 0;
-
     const totalDays = rentalDays;
     const packageDays = selectedPackage.days;
     const extraDays = totalDays - packageDays;
@@ -118,7 +118,6 @@ const BikeDetailsPage = () => {
     if (extraDays > 0) {
       return (packagePricePerDay * packageDays + extraDaysPricePerDay * extraDays) / totalDays;
     }
-
     return packagePricePerDay;
   };
 
@@ -126,11 +125,31 @@ const BikeDetailsPage = () => {
 
   const handleAddressChange = (field, value) => {
     setAddressDetails((prevDetails) => ({ ...prevDetails, [field]: value }));
+    setErrors((prevErrors) => ({ ...prevErrors, [field]: "" }));
+  };
+
+  const validateAddress = () => {
+    const newErrors = {};
+    if (!addressDetails.fullAddress) {
+      newErrors.fullAddress = "Full address is required.";
+    }
+    if (!addressDetails.pinCode) {
+      newErrors.pinCode = "Pin code is required.";
+    }
+    if (!addressDetails.nearby) {
+      newErrors.nearby = "Nearby landmark is required.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleProceedToCheckout = () => {
     if (!selectedPackage) {
       alert("Please select a rental package before proceeding.");
+      return;
+    }
+
+    if (pickupOption === "DELIVERY_AT_LOCATION" && !validateAddress()) {
       return;
     }
 
@@ -145,7 +164,11 @@ const BikeDetailsPage = () => {
       totalPrice: calculateTotalPrice(),
       selectedPackage,
       rentalDays,
-      addressDetails,
+      addressDetails: {
+        fullAddress: addressDetails.fullAddress,
+        pinCode: addressDetails.pinCode,
+        nearby: addressDetails.nearby
+      },
       pickupOption,
       deliveryCharge,
       serviceCharge,
@@ -154,9 +177,16 @@ const BikeDetailsPage = () => {
       dropDate: new Date(Date.now() + (rentalDays * 24 * 60 * 60 * 1000)),
       storeName: bike.storeName || "Our Store Location: Rental Street",
     };
+    
 
     if (!isLoggedIn) {
-      sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+      try {
+        sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+      } catch (error) {
+        console.error("Error saving checkout data to sessionStorage:", error);
+        alert("Failed to save checkout data. Please try again.");
+        return;
+      }
       setIsLoginPopupOpen(true);
       setShowToast(false);
       return;
@@ -193,6 +223,18 @@ const BikeDetailsPage = () => {
     setIsLoggedIn(true);
     setIsRegistrationPopupOpen(false);
   };
+
+  // Update global state when rental days change
+  useEffect(() => {
+    const startDate = new Date(formData.startDate);
+    const endDate = new Date(formData.startDate);
+    endDate.setDate(startDate.getDate() + rentalDays);
+
+    setFormData((prevData) => ({
+      ...prevData,
+      endDate: endDate.toISOString().split('T')[0],
+    }));
+  }, [rentalDays, setFormData, formData.startDate]);
 
   return (
     <motion.div
@@ -308,67 +350,77 @@ const BikeDetailsPage = () => {
           </div>
 
           {showAddressPopup && (
-            <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
-                <h2 className="text-lg font-semibold">Enter Delivery Address</h2>
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Full Address</label>
-                  <input
-                    type="text"
-                    value={addressDetails.fullAddress}
-                    onChange={(e) => handleAddressChange("fullAddress", e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                    placeholder="Enter full address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Pin Code</label>
-                  <input
-                    type="text"
-                    value={addressDetails.pinCode}
-                    onChange={(e) => handleAddressChange("pinCode", e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                    placeholder="Enter pin code"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Nearby Landmark</label>
-                  <input
-                    type="text"
-                    value={addressDetails.nearby}
-                    onChange={(e) => handleAddressChange("nearby", e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                    placeholder="Enter nearby landmark"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setShowAddressPopup(false)}
-                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => setShowAddressPopup(false)}
-                    className="px-4 py-2 bg-orange-400 text-white rounded hover:bg-orange-500"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+  <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-96 space-y-4">
+      <h2 className="text-lg font-semibold">Enter Delivery Address</h2>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Full Address</label>
+        <input
+          type="text"
+          value={addressDetails.fullAddress}
+          onChange={(e) => handleAddressChange("fullAddress", e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded text-sm"
+          placeholder="Enter full address"
+        />
+        {errors.fullAddress && <p className="text-red-500 text-xs mt-1">{errors.fullAddress}</p>}
+      </div>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Pin Code</label>
+        <input
+          type="tel"
+          value={addressDetails.pinCode}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Allow only positive numbers and limit to 6 digits
+            if (/^\d{0,6}$/.test(value)) {
+              handleAddressChange("pinCode", value);
+            }
+          }}
+          min="0"
+          className="w-full p-2 border border-gray-300 rounded text-sm"
+          placeholder="Enter pin code"
+        />
+        {errors.pinCode && <p className="text-red-500 text-xs mt-1">{errors.pinCode}</p>}
+      </div>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium">Nearby Landmark</label>
+        <input
+          type="text"
+          value={addressDetails.nearby}
+          onChange={(e) => handleAddressChange("nearby", e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded text-sm"
+          placeholder="Enter nearby landmark"
+        />
+        {errors.nearby && <p className="text-red-500 text-xs mt-1">{errors.nearby}</p>}
+      </div>
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setShowAddressPopup(false)}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            if (validateAddress()) {
+              setShowAddressPopup(false);
+            }
+          }}
+          className="px-4 py-2 bg-orange-400 text-white rounded hover:bg-orange-500"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
           <div className="mt-4 space-y-2">
             <h3 className="text-lg font-bold text-gray-800">Price Breakdown:</h3>
             <p className="text-sm text-gray-600">
               <strong>Package:</strong> {selectedPackage?.days || 0} Days (₹{selectedPackage?.price || 0})
             </p>
-            {/* {rentalDays > (selectedPackage?.days || 0) && (
-              <p className="text-sm text-gray-600">
-                <strong>Extra Days Cost:</strong> ₹{oneDayPackage?.price || 0} × {rentalDays - selectedPackage?.days} days = ₹{((oneDayPackage?.price || 0) * (rentalDays - selectedPackage?.days)).toFixed(2)}
-              </p>
-            )} */}
             <p className="text-sm text-gray-600">
               <strong>Delivery Charge:</strong> ₹{pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0}
             </p>
@@ -412,36 +464,48 @@ const BikeDetailsPage = () => {
       </div>
 
       {/* Confirmation Toast */}
-      <AnimatePresence>
-        {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            transition={{ duration: 0.3 }}
-            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white p-4 rounded-lg shadow-lg border-l-4 border-orange-400 z-50 w-80"
-          >
-            <div className="flex flex-col items-center">
-              <h3 className="text-lg font-semibold mb-2">Are you sure?</h3>
-              <p className="text-sm text-gray-600 mb-4">Ready to proceed with your bike rental?</p>
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={cancelCheckout}
-                  className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-all duration-300"
-                >
-                  No
-                </button>
-                <button
-                  onClick={confirmCheckout}
-                  className="flex-1 py-2 px-4 bg-orange-400 text-white rounded hover:bg-orange-500 transition-all duration-300"
-                >
-                  Yes
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Confirmation Modal */}
+<AnimatePresence>
+  {showToast && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border-t-4 border-orange-500"
+      >
+        <div className="text-center">
+          <h3 className="text-xl font-bold mb-2 text-gray-800">Confirm Action</h3>
+          <p className="text-sm text-gray-600 mb-5">
+            Are you sure you want to proceed with your bike rental?
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={cancelCheckout}
+              className="px-5 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmCheckout}
+              className="px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
     </motion.div>
   );
 };

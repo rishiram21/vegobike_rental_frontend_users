@@ -35,8 +35,6 @@ const CheckoutPage = () => {
   const [showTermsError, setShowTermsError] = useState(false);
   const [documentMessage, setDocumentMessage] = useState("");
   const refreshInterval = 60000; // 60 seconds
-  const [deliveryOption, setDeliveryOption] = useState("SELF_PICKUP"); // or "delivery" as default
-
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -89,16 +87,19 @@ const CheckoutPage = () => {
   } = checkoutData;
 
   const depositAmount = bike?.deposit || 0;
-  const deliveryCharge = pickupOption === "Delivery at Location" ? 250 : 0;
+  const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
   const serviceCharge = 2;
 
-  const basePrice = selectedPackage?.price * rentalDays;
+  const basePrice = selectedPackage?.price || 0;
+  const extraDays = rentalDays - (selectedPackage?.days || 0);
+  const extraDaysPrice = extraDays > 0 ? extraDays * (checkoutData.oneDayPackage?.price || 0) : 0;
+  const totalPackagePrice = basePrice + extraDaysPrice;
 
   // Apply GST only to base price and delivery charge
-  const gstableAmount = basePrice + deliveryCharge;
+  const gstableAmount = totalPackagePrice + deliveryCharge;
   const gstAmount = gstableAmount * 0.18;
 
-  const totalAmountBeforeDiscount = basePrice + depositAmount + deliveryCharge + serviceCharge + gstAmount;
+  const totalAmountBeforeDiscount = totalPackagePrice + depositAmount + deliveryCharge + serviceCharge + gstAmount;
   const payableAmount = Math.max(0, totalAmountBeforeDiscount - discount);
 
   // Handle dropdown selection
@@ -123,7 +124,7 @@ const CheckoutPage = () => {
     // Prepare request payload
     const payload = {
       couponCode: codeToApply,
-      originalPrice: basePrice,
+      originalPrice: totalPackagePrice,
       user: user.id, // Use the logged-in user's ID
     };
 
@@ -137,12 +138,12 @@ const CheckoutPage = () => {
           let calculatedDiscount = 0;
 
           // Log values for debugging
-          console.log("Base Price:", basePrice);
+          console.log("Base Price:", totalPackagePrice);
           console.log("Coupon Data:", appliedCouponData);
 
           if (appliedCouponData.couponType === 'PERCENTAGE') {
-            if (typeof basePrice === 'number' && typeof appliedCouponData.discountValue === 'number') {
-              calculatedDiscount = (basePrice * appliedCouponData.discountValue) / 100;
+            if (typeof totalPackagePrice === 'number' && typeof appliedCouponData.discountValue === 'number') {
+              calculatedDiscount = (totalPackagePrice * appliedCouponData.discountValue) / 100;
             } else {
               console.error("Invalid data types for percentage calculation.");
             }
@@ -192,14 +193,14 @@ const CheckoutPage = () => {
   const handleConfirmBooking = async () => {
     setShowConfirmation(false);
     setIsProcessing(true);
-  
+
     try {
       // Fetch the logged-in user's ID using the token
       const token = localStorage.getItem("jwtToken"); // Ensure you have stored the JWT token
       if (!token) {
         throw new Error("User is not logged in.");
       }
-  
+
       const userResponse = await axios.get(
         `${import.meta.env.VITE_BASE_URL}/booking/user/id`,
         {
@@ -208,18 +209,16 @@ const CheckoutPage = () => {
           },
         }
       );
-  
+
       const userId = userResponse.data; // Get user ID from response
-  
+
       const isDeliverySelected = pickupOption === "DELIVERY_AT_LOCATION";
-  
+
       const bookingDetails = {
         vehicleId: bike.id,
         userId: userId,
         packageId: selectedPackage.id,
         totalAmount: payableAmount,
-        // startTime: new Date(pickupDate).toISOString().replace("T", " ").slice(0, 19),
-        // endTime: new Date(dropDate).toISOString().replace("T", " ").slice(0, 19),
         startTime: new Date(pickupDate).toISOString().replace(/\..+/, ''), // Remove milliseconds and timezone offset
         endTime: new Date(dropDate).toISOString().replace(/\..+/, ''), // Remove milliseconds and timezone offset
         couponCode: appliedCoupon?.code || null,
@@ -229,7 +228,7 @@ const CheckoutPage = () => {
         deliverySelected: isDeliverySelected,
         deliveryLocation: isDeliverySelected ? JSON.stringify(addressDetails) : null, // Convert addressDetails to string if delivery is selected
       };
-  
+
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/booking/book`,
         bookingDetails,
@@ -239,7 +238,7 @@ const CheckoutPage = () => {
           },
         }
       );
-  
+
       const completeOrder = {
         ...response.data,
         bikeDetails: bike,
@@ -252,16 +251,16 @@ const CheckoutPage = () => {
         dropDate,
         status: response.data.status || "Confirmed",
       };
-  
+
       console.log("Booking confirmed:", completeOrder);
-  
+
       // Set the document message
       setDocumentMessage(response.data.documentMessage || "");
-  
+
       // Insert the previously commented-out booking confirmation code here
       setBookingConfirmed(true);
       addOrder({ completeOrder });
-  
+
     } catch (error) {
       console.error("Booking error:", error);
       if (error.response) {
@@ -275,7 +274,7 @@ const CheckoutPage = () => {
       setIsProcessing(false);
     }
   };
-  
+
   const [bookingError, setBookingError] = useState("");
 
   const formatDate = (date) => {
@@ -413,7 +412,7 @@ const CheckoutPage = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Base Price:</span>
-                  <span>₹{basePrice}</span>
+                  <span>₹{totalPackagePrice}</span>
                 </div>
                 <div className="flex justify-between text-pink-500">
                   <span>Delivery Charge:</span>
