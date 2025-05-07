@@ -14,21 +14,15 @@ const Navbar = () => {
   const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
 
-  // Create refs for the dropdown and button
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
-  // Load formData from localStorage on component mount
   useEffect(() => {
     const storedData = JSON.parse(localStorage.getItem("formData"));
     if (storedData && Object.keys(storedData).length > 0) {
-      console.log("Loaded data from localStorage:", storedData);
       setFormData(storedData);
-    } else {
-      console.log("No data found in localStorage.");
     }
 
-    // Add scroll event listener
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
@@ -37,15 +31,12 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [setFormData]);
 
-  // Save formData to localStorage whenever it changes
   useEffect(() => {
     if (formData && Object.keys(formData).length > 0) {
-      console.log("Saving data to localStorage:", formData);
       localStorage.setItem("formData", JSON.stringify(formData));
     }
   }, [formData]);
 
-  // Check if the user is logged in and fetch user data
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem("jwtToken");
@@ -66,20 +57,9 @@ const Navbar = () => {
 
           const data = await response.json();
           setUserData(data);
-
-          const serializedData = JSON.stringify(data);
-          if (serializedData.length > 5000000) {
-            throw new Error('Data size exceeds the limit');
-          }
-
-          localStorage.setItem("userData", serializedData);
+          localStorage.setItem("userData", JSON.stringify(data));
         } catch (error) {
           console.error("Error fetching user data:", error);
-          if (error.name === 'QuotaExceededError') {
-            console.warn('Storage quota exceeded. Clearing some data...');
-            localStorage.clear();
-            localStorage.setItem("userData", JSON.stringify(userData));
-          }
           localStorage.removeItem("jwtToken");
           setIsLoggedIn(false);
           setUserData(null);
@@ -94,20 +74,19 @@ const Navbar = () => {
     fetchUserData();
   }, [navigate]);
 
-  // Add click outside listener to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        isProfileDropdownOpen &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target)
-      ) {
-        setIsProfileDropdownOpen(false);
-      }
-    };
+  const handleClickOutside = (event) => {
+    if (
+      isProfileDropdownOpen &&
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target) &&
+      buttonRef.current &&
+      !buttonRef.current.contains(event.target)
+    ) {
+      setIsProfileDropdownOpen(false);
+    }
+  };
 
+  useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
 
@@ -117,24 +96,23 @@ const Navbar = () => {
     };
   }, [isProfileDropdownOpen]);
 
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutsideMobileMenu = (event) => {
-      if (isMobileMenuOpen) {
-        const mobileMenuArea = document.getElementById('mobile-menu-area');
-        const menuToggle = document.getElementById('mobile-menu-toggle');
+  const handleClickOutsideMobileMenu = (event) => {
+    if (isMobileMenuOpen) {
+      const mobileMenuArea = document.getElementById('mobile-menu-area');
+      const menuToggle = document.getElementById('mobile-menu-toggle');
 
-        if (
-          mobileMenuArea &&
-          !mobileMenuArea.contains(event.target) &&
-          menuToggle &&
-          !menuToggle.contains(event.target)
-        ) {
-          setIsMobileMenuOpen(false);
-        }
+      if (
+        mobileMenuArea &&
+        !mobileMenuArea.contains(event.target) &&
+        menuToggle &&
+        !menuToggle.contains(event.target)
+      ) {
+        setIsMobileMenuOpen(false);
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     document.addEventListener('mousedown', handleClickOutsideMobileMenu);
     document.addEventListener('touchstart', handleClickOutsideMobileMenu);
 
@@ -144,7 +122,6 @@ const Navbar = () => {
     };
   }, [isMobileMenuOpen]);
 
-  // Format date and time for display
   const formatDateTime = (datetime) => {
     if (!datetime) return "Select";
     const date = new Date(datetime);
@@ -165,18 +142,21 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white text-gray-800 shadow-lg' : 'bg-orange-600 text-white'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white text-gray-800 shadow-lg' : 'bg-indigo-900 text-white'}`}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
-          {/* Logo and Location/Date Section */}
           <div className="flex items-center space-x-4 md:space-x-6">
-            {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              <FaMotorcycle className={`text-2xl ${isScrolled ? 'text-orange-600' : 'text-white'}`} />
-              <span className={`text-2xl font-bold transition-colors ${isScrolled ? 'text-orange-600' : 'text-white'}`}>OKBikes</span>
+              <img
+                src="/vegologo.png"
+                alt="VegoBike Logo"
+                className="h-8 w-8 object-contain"
+              />
+              <span className={`text-2xl font-bold transition-colors ${isScrolled ? 'text-indigo-600' : 'text-white'}`}>
+                VegoBike
+              </span>
             </Link>
 
-            {/* Location and Date Info */}
             <div className="hidden md:flex items-center space-x-4">
               {formData.location && (
                 <div className={`flex items-center space-x-1 ${isScrolled ? 'text-gray-600' : 'text-white'}`}>
@@ -198,9 +178,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Right Side: Contact & Profile */}
           <div className="flex items-center space-x-4">
-            {/* Contact - Now displays user's phone if logged in */}
             <div className={`hidden md:flex items-center space-x-2 ${isScrolled ? 'text-gray-800' : 'text-white'}`}>
               <FaPhoneAlt size={16} />
               <span className="font-medium">
@@ -208,13 +186,12 @@ const Navbar = () => {
               </span>
             </div>
 
-            {/* Profile Dropdown */}
             <div className="relative">
               <button
                 ref={buttonRef}
                 id="profile-dropdown-button"
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className={`flex items-center space-x-1 p-2 rounded-full ${isScrolled ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-orange-700 text-white hover:bg-orange-800'} transition-colors`}
+                className={`flex items-center space-x-1 p-2 rounded-full ${isScrolled ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' : 'bg-indigo-700 text-white hover:bg-indigo-800'} transition-colors`}
               >
                 <FaUser />
                 <span className="hidden md:inline text-sm font-medium">
@@ -227,31 +204,30 @@ const Navbar = () => {
                   ref={dropdownRef}
                   className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-40"
                 >
-
                   <Link
                     to="/"
-                    className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                    onClick={() => setIsProfileDropdownOpen(false)}
                   >
                     Home
                   </Link>
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
                     My Profile
                   </Link>
                   <Link
                     to="/orders"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
                     My Bookings
                   </Link>
                   <Link
                     to="/contactus"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
                     onClick={() => setIsProfileDropdownOpen(false)}
                   >
                     Contact Us
@@ -269,7 +245,6 @@ const Navbar = () => {
               )}
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               id="mobile-menu-toggle"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -281,11 +256,9 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div id="mobile-menu-area" className="md:hidden bg-white">
           <div className="px-2 pt-2 pb-4 space-y-1">
-            {/* Mobile Location and Date */}
             {formData.location && (
               <div className="flex items-center px-3 py-2 text-gray-600">
                 <IoLocationOutline className="mr-2" />
@@ -304,30 +277,28 @@ const Navbar = () => {
 
             <Link
               to="/"
-              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
+              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Home
             </Link>
-
-
             <Link
               to="/profile"
-              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
+              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               My Profile
             </Link>
             <Link
               to="/orders"
-              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
+              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               My Bookings
             </Link>
             <Link
               to="/contactus"
-              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-orange-50 hover:text-orange-600 rounded-md"
+              className="block px-3 py-3 text-base font-medium text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 rounded-md"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Contact Us

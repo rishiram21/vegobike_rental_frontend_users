@@ -195,7 +195,7 @@ const ProfilePage = () => {
     return (
       <div className="min-h-screen flex justify-center items-center">
         <motion.div
-          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
@@ -226,14 +226,14 @@ const ProfilePage = () => {
               transition={{ duration: 0.5 }}
             >
               {/* Header with gradient background */}
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
+              <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-6 text-white">
                 <div className="flex items-center space-x-4">
                   <div className="bg-white rounded-full p-3 shadow-md">
-                    <FaUser className="text-orange-600 text-2xl" />
+                    <FaUser className="text-indigo-600 text-2xl" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold">Personal Information</h2>
-                    <p className="text-orange-100 text-sm">Your profile details</p>
+                    <p className="text-indigo-100 text-sm">Your profile details</p>
                   </div>
                 </div>
               </div>
@@ -279,7 +279,7 @@ const ProfilePage = () => {
                 onClick={toggleDocSection}
               >
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                  <FaFileAlt className="mr-2 text-orange-500" />
+                  <FaFileAlt className="mr-2 text-indigo-500" />
                   My Documents
                 </h3>
                 {isDocSectionOpen ? (
@@ -302,7 +302,7 @@ const ProfilePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <DocumentCard
                     title="Aadhar Card (Front)"
-                    icon={<FaIdCard className="text-orange-500" />}
+                    icon={<FaIdCard className="text-indigo-500" />}
                   >
                     <ProfileImageDetail
                       label="Front Side"
@@ -311,7 +311,7 @@ const ProfilePage = () => {
                     />
                     {uploadedImages.aadharFrontSide.status !== 'APPROVED' && (
                       <label className="block w-full mt-2">
-                        <span className="inline-block w-full py-2 bg-orange-600 text-white text-center rounded-md cursor-pointer hover:bg-orange-700 transition-colors">
+                        <span className="inline-block w-full py-2 bg-indigo-600 text-white text-center rounded-md cursor-pointer hover:bg-indigo-700 transition-colors">
                           Upload Document
                         </span>
                         <input
@@ -326,7 +326,7 @@ const ProfilePage = () => {
 
                   <DocumentCard
                     title="Aadhar Card (Back)"
-                    icon={<FaIdCard className="text-orange-500" />}
+                    icon={<FaIdCard className="text-indigo-500" />}
                   >
                     <ProfileImageDetail
                       label="Back Side"
@@ -335,7 +335,7 @@ const ProfilePage = () => {
                     />
                     {uploadedImages.aadharBackSide.status !== 'APPROVED' && (
                       <label className="block w-full mt-2">
-                        <span className="inline-block w-full py-2 bg-orange-600 text-white text-center rounded-md cursor-pointer hover:bg-orange-700 transition-colors">
+                        <span className="inline-block w-full py-2 bg-indigo-600 text-white text-center rounded-md cursor-pointer hover:bg-indigo-700 transition-colors">
                           Upload Document
                         </span>
                         <input
@@ -350,7 +350,7 @@ const ProfilePage = () => {
 
                   <DocumentCard
                     title="Driving License"
-                    icon={<FaShieldAlt className="text-orange-500" />}
+                    icon={<FaShieldAlt className="text-indigo-500" />}
                   >
                     <ProfileImageDetail
                       label="Driving License"
@@ -359,7 +359,7 @@ const ProfilePage = () => {
                     />
                     {uploadedImages.drivingLicense.status !== 'APPROVED' && (
                       <label className="block w-full mt-2">
-                        <span className="inline-block w-full py-2 bg-orange-600 text-white text-center rounded-md cursor-pointer hover:bg-orange-700 transition-colors">
+                        <span className="inline-block w-full py-2 bg-indigo-600 text-white text-center rounded-md cursor-pointer hover:bg-indigo-700 transition-colors">
                           Upload Document
                         </span>
                         <input
@@ -375,7 +375,7 @@ const ProfilePage = () => {
 
                 {!areAllDocumentsApproved() && (
                   <motion.button
-                    className="mt-6 w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition-colors"
+                    className="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors"
                     onClick={handleVerify}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -395,7 +395,7 @@ const ProfilePage = () => {
           >
             <p className="text-gray-600">User information not available.</p>
             <motion.button
-              className="mt-4 px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition-colors"
+              className="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors"
               onClick={() => navigate("/login")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -411,7 +411,7 @@ const ProfilePage = () => {
 
 const ProfileDetail = ({ icon, label, value }) => (
   <div className="flex items-center space-x-4 p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-    <div className="text-orange-500 bg-white p-3 rounded-full shadow-sm">
+    <div className="text-indigo-500 bg-white p-3 rounded-full shadow-sm">
       {icon}
     </div>
     <div>

@@ -3,7 +3,7 @@ import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/f
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white py-10">
+    <footer className="bg-indigo-900 text-white py-10">
       <div className="container mx-auto px-4">
         {/* Top Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -47,9 +47,9 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-bold mb-3">Contact Info</h3>
             <ul className="space-y-2">
-              <li className="text-sm">📍 123 Street, City, Country</li>
-              <li className="text-sm">📞 +91 98765 43210</li>
-              <li className="text-sm">✉️ support@bikerental.com</li>
+              <li className="text-sm">📍 AK Enterprises, Ashok Nagar road, Ashok Nagar, Tathwade - 411033</li>
+              <li className="text-sm">📞 +91 9921426002</li>
+              <li className="text-sm">✉️ vegobike@gmail.com</li>
             </ul>
           </div>
 
@@ -76,7 +76,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="border-t border-gray-700 mt-8 pt-4 text-center">
           <p className="text-sm">
-            © {new Date().getFullYear()} Bike Rental Service. All Rights Reserved.
+            © {new Date().getFullYear()} Vego Bike. All Rights Reserved.
           </p>
           <p className="text-xs mt-1">
             Designed for bike enthusiasts who love adventure.

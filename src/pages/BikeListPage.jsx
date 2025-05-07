@@ -222,7 +222,7 @@ const BikeListPage = () => {
     <div className="container mx-auto py-6 flex flex-col lg:flex-row relative min-h-screen mt-14">
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className="lg:hidden fixed bottom-4 left-4 bg-orange-500 text-white p-3 square shadow-lg z-50 flex items-center gap-2"
+        className="lg:hidden fixed bottom-4 left-4 bg-indigo-500 text-white p-3 square shadow-lg z-50 flex items-center gap-2"
       >
         <FaFilter size={24} />
       </button>
@@ -332,13 +332,13 @@ const BikeListPage = () => {
         <h4 className="font-semibold mb-2 text-sm text-gray-700">Sort By</h4>
         <div className="mb-6 flex flex-row gap-2">
           <button
-            className="block w-full bg-orange-300 text-white py-2 px-4 rounded hover:bg-orange-400"
+            className="block w-full bg-indigo-300 text-white py-2 px-4 rounded hover:bg-indigo-400"
             onClick={() => handleSort("asc")}
           >
             Price: Low to High
           </button>
           <button
-            className="block w-full bg-orange-300 text-white py-2 px-4 rounded hover:bg-orange-400"
+            className="block w-full bg-indigo-300 text-white py-2 px-4 rounded hover:bg-indigo-400"
             onClick={() => handleSort("desc")}
           >
             Price: High to Low
@@ -357,7 +357,7 @@ const BikeListPage = () => {
         <div className="flex-grow">
           {loading ? (
             <div className="flex justify-center items-center h-96">
-              <FaSpinner className="animate-spin text-orange-500 text-4xl" />
+              <FaSpinner className="animate-spin text-indigo-500 text-4xl" />
             </div>
           ) : currentBikes.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -386,7 +386,7 @@ const BikeListPage = () => {
 
                     <h2 className="text-sm font-medium">Available at</h2>
                     <div className="flex items-center">
-                      <span className="text-orange-500 mr-1">
+                      <span className="text-indigo-500 mr-1">
                         <FaMapMarkerAlt />
                       </span>
                       <p className="text-sm text-gray-600">{bike.storeName}</p>
@@ -413,7 +413,7 @@ const BikeListPage = () => {
                     </button>
                   ) : (
                     <button
-                      className="mt-3 w-full bg-orange-500 text-white py-2 px-2 hover:bg-orange-600 transition-colors rounded-lg"
+                      className="mt-3 w-full bg-indigo-500 text-white py-2 px-2 hover:bg-indigo-600 transition-colors rounded-lg"
                       onClick={() =>
                         navigate(`/bike-details`, {
                           state: {
@@ -456,9 +456,9 @@ const BikeListPage = () => {
                   onClick={() => paginate(page + 1)}
                   className={`px-3 py-2 mx-1 border rounded-full ${
                     currentPage === page + 1
-                      ? "bg-orange-500 text-white"
+                      ? "bg-indigo-500 text-white"
                       : "bg-white text-gray-700"
-                  } hover:bg-orange-400 hover:text-white transition-colors`}
+                  } hover:bg-indigo-400 hover:text-white transition-colors`}
                 >
                   {page + 1}
                 </button>

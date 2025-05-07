@@ -332,14 +332,14 @@ const HomePage = () => {
         ></div>
 
         {/* Right Half (Form Section) */}
-        <div className="w-full md:w-1/2 h-full flex flex-col justify-center items-center p-8 bg-gradient-to-r from-orange-500 to-orange-400 slide-in-right">
+        <div className="w-full md:w-1/2 h-full flex flex-col justify-center items-center p-8 bg-gradient-to-r from-indigo-900 to-indigo-600 slide-in-right">
           <h1 className="text-4xl font-bold text-white mb-6 animate-pulse-once">
-            Welcome to Ok Bikes
+            Welcome to VegoBike
           </h1>
           <div className="bg-white p-8 shadow-lg w-full max-w-md booking-form">
             <div className="mb-4">
               <label
-                className="block text-orange-700 font-medium mb-2"
+                className="block text-indigo-800 font-medium mb-2"
                 htmlFor="location"
               >
                 Location
@@ -352,7 +352,7 @@ const HomePage = () => {
                 value={formData.location}
                 readOnly
                 onClick={() => setPopupOpen(true)}
-                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-orange-500 hover:shadow-md transition-all duration-300 ${
+                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-900 hover:shadow-md transition-all duration-300 ${
                   errors.location ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -362,7 +362,7 @@ const HomePage = () => {
             </div>
             <div className="mb-4">
               <label
-                className="block text-orange-700 font-medium mb-2"
+                className="block text-indigo-800 font-medium mb-2"
                 htmlFor="startDate"
               >
                 Start Date & Time
@@ -374,7 +374,7 @@ const HomePage = () => {
                 value={formData.startDate}
                 min={formatDateForInput(new Date())}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-orange-500 hover:shadow-md transition-all duration-300 ${
+                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 ${
                   errors.startDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -384,7 +384,7 @@ const HomePage = () => {
             </div>
             <div className="mb-6">
               <label
-                className="block text-orange-700 font-medium mb-2"
+                className="block text-indigo-800 font-medium mb-2"
                 htmlFor="endDate"
               >
                 End Date & Time
@@ -396,7 +396,7 @@ const HomePage = () => {
                 value={formData.endDate}
                 min={formData.startDate}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-orange-500 hover:shadow-md transition-all duration-300 ${
+                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 ${
                   errors.endDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -407,7 +407,7 @@ const HomePage = () => {
             <button
               onClick={handleSearch}
               disabled={isLoading || animationState.searchBtn}
-              className={`w-full bg-orange-700 text-white rounded-full py-2 px-4 hover:bg-orange-600 transition-all duration-300 transform hover:scale-103 active:scale-95 ${
+              className={`w-full bg-indigo-800 text-white rounded-full py-2 px-4 hover:bg-indigo-600 transition-all duration-300 transform hover:scale-103 active:scale-95 ${
                 animationState.searchBtn ? 'animate-pulse' : ''
               }`}
             >
@@ -433,18 +433,18 @@ const HomePage = () => {
               placeholder="Search or type city to select"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 mb-4 border focus:ring-2 focus:ring-orange-500 outline-none transition-all duration-300"
+              className="w-full px-4 py-2 mb-4 border focus:ring-2 focus:ring-indigo-500 outline-none transition-all duration-300"
               autoFocus
             />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
               {filteredCities.map((city, index) => (
                 <div
                   key={index}
-                  className="flex flex-col items-center cursor-pointer hover:bg-orange-50 p-3 rounded-lg transition-all duration-300 transform hover:scale-105 animate-fade-in-up"
+                  className="flex flex-col items-center cursor-pointer hover:bg-indigo-50 p-3 rounded-lg transition-all duration-300 transform hover:scale-105 animate-fade-in-up"
                   style={{ animationDelay: `${index * 50}ms` }}
                   onClick={() => handleCitySelection(city)}
                 >
-                  <div className="w-20 h-20 overflow-hidden rounded-full border-2 border-orange-300 transition-transform duration-300 hover:border-orange-500">
+                  <div className="w-20 h-20 overflow-hidden rounded-full border-2 border-indigo-300 transition-transform duration-300 hover:border-indigo-500">
                     <img
                       src={`data:image/jpeg;base64,${city.image}`}
                       alt={city.name}
@@ -461,38 +461,38 @@ const HomePage = () => {
       )}
 
       {/* Additional Sections */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-400 py-16">
+      <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-8 animate-bounce-once">
-            Why Choose OK Bikes
+            Why Choose VegoBike
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                icon: <FaBicycle className="text-orange-600 text-4xl mb-4" />,
+                icon: <FaBicycle className="text-indigo-600 text-4xl mb-4" />,
                 text: "Wide range of bikes.",
               },
               {
-                icon: <FaHandshake className="text-orange-500 text-4xl mb-4" />,
+                icon: <FaHandshake className="text-indigo-500 text-4xl mb-4" />,
                 text: "Affordable pricing.",
               },
               {
-                icon: <FaPhone className="text-orange-500 text-4xl mb-4" />,
+                icon: <FaPhone className="text-indigo-500 text-4xl mb-4" />,
                 text: "24/7 customer support.",
               },
               {
-                icon: <FaCheck className="text-orange-500 text-4xl mb-4" />,
+                icon: <FaCheck className="text-indigo-500 text-4xl mb-4" />,
                 text: "Easy booking process.",
               },
               {
                 icon: (
-                  <FaMapMarkerAlt className="text-orange-500 text-4xl mb-4" />
+                  <FaMapMarkerAlt className="text-indigo-500 text-4xl mb-4" />
                 ),
                 text: "Multiple locations.",
               },
               {
                 icon: (
-                  <FaCreditCard className="text-orange-500 text-4xl mb-4" />
+                  <FaCreditCard className="text-indigo-500 text-4xl mb-4" />
                 ),
                 text: "Secure payment.",
               },
@@ -504,14 +504,14 @@ const HomePage = () => {
                 <div className="transform transition-transform duration-500 hover:rotate-12 hover:scale-110">
                   {reason.icon}
                 </div>
-                <p className="text-gray-700 font-medium">{reason.text}</p>
+                <p className="text-gray-800 font-medium">{reason.text}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-orange-500 to-orange-400 py-16">
+      <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-8 animate-pulse-once">
             How to Book a Bike
@@ -560,7 +560,7 @@ const HomePage = () => {
                 className="flex flex-col items-center text-center bg-gray-50 p-6 shadow-lg transform transition-all duration-300 hover:shadow-xl hover:scale-105 animate-slide-in-from-bottom"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="text-orange-500 text-2xl font-semibold mb-2">
+                <div className="text-indigo-500 text-2xl font-semibold mb-2">
                   {step.step}
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
@@ -573,7 +573,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div className="py-16 bg-gradient-to-r from-orange-500 to-orange-400 overflow-y-auto">
+      <div className="py-16 bg-gradient-to-r from-indigo-500 to-indigo-400 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center text-black mb-8 animate-float">
             Our Presence
@@ -585,7 +585,7 @@ const HomePage = () => {
                 className="flex flex-col items-center text-center hover:bg-white hover:bg-opacity-20 p-3 rounded-lg transition-all duration-300 transform hover:scale-105 animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="w-20 h-20 overflow-hidden rounded-full mb-4 border-2 border-white transition-all duration-300 hover:border-orange-300">
+                <div className="w-20 h-20 overflow-hidden rounded-full mb-4 border-2 border-white transition-all duration-300 hover:border-indigo-300">
                   <img
                     src={`data:image/jpeg;base64,${city.image}`}
                     alt={city.name}

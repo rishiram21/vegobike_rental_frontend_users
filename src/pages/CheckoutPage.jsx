@@ -5,6 +5,7 @@ import { FaRegCalendarAlt, FaMapMarkerAlt, FaClipboardCheck, FaExclamationTriang
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import numberToWords from 'number-to-words';
+import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
 
 const convertToWords = (amount) => {
   const rupees = Math.floor(amount);
@@ -17,7 +18,7 @@ const convertToWords = (amount) => {
 const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { addOrder, user } = useGlobalState(); // Assuming user is available in global state
+  const { addOrder, user } = useGlobalState();
 
   const [checkoutData, setCheckoutData] = useState(location.state || {});
   const [loadingData, setLoadingData] = useState(true);
@@ -34,6 +35,7 @@ const CheckoutPage = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showTermsError, setShowTermsError] = useState(false);
   const [documentMessage, setDocumentMessage] = useState("");
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const refreshInterval = 60000; // 60 seconds
 
   useEffect(() => {
@@ -88,19 +90,20 @@ const CheckoutPage = () => {
 
   const depositAmount = bike?.deposit || 0;
   const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
-  const serviceCharge = 2;
+  // const serviceCharge = 2;
 
-  const basePrice = selectedPackage?.price || 0;
-  const extraDays = rentalDays - (selectedPackage?.days || 0);
-  const extraDaysPrice = extraDays > 0 ? extraDays * (checkoutData.oneDayPackage?.price || 0) : 0;
-  const totalPackagePrice = basePrice + extraDaysPrice;
+  // Calculate base price with extra days
+  const packagePrice = selectedPackage?.price || 0;
+  const extraDays = Math.max(rentalDays - (selectedPackage?.days || 0), 0);
+  const extraDaysPrice = extraDays * (checkoutData.oneDayPackage?.price || 0);
+  const basePrice = packagePrice + extraDaysPrice;
 
-  // Apply GST only to base price and delivery charge
-  const gstableAmount = totalPackagePrice + deliveryCharge;
-  const gstAmount = gstableAmount * 0.18;
+  // Calculate GST on (basePrice + deliveryCharge)
+  const taxableAmount = basePrice + deliveryCharge;
+  const gstAmount = taxableAmount * 0.18;
 
-  const totalAmountBeforeDiscount = totalPackagePrice + depositAmount + deliveryCharge + serviceCharge + gstAmount;
-  const payableAmount = Math.max(0, totalAmountBeforeDiscount - discount);
+  // Calculate total amount before discount
+  const totalAmountBeforeDiscount = basePrice + deliveryCharge + gstAmount + depositAmount;
 
   // Handle dropdown selection
   const handleDropdownChange = (e) => {
@@ -112,7 +115,6 @@ const CheckoutPage = () => {
   };
 
   const handleApplyCoupon = async () => {
-    // Ensure couponCode and selectedCouponFromDropdown are valid strings before trimming
     const trimmedCouponCode = couponCode ? couponCode.trim() : "";
     const codeToApply = trimmedCouponCode || selectedCouponFromDropdown;
 
@@ -121,11 +123,10 @@ const CheckoutPage = () => {
       return;
     }
 
-    // Prepare request payload
     const payload = {
       couponCode: codeToApply,
-      originalPrice: totalPackagePrice,
-      user: user.id, // Use the logged-in user's ID
+      originalPrice: basePrice,
+      user: user.id,
     };
 
     try {
@@ -137,26 +138,14 @@ const CheckoutPage = () => {
         if (appliedCouponData) {
           let calculatedDiscount = 0;
 
-          // Log values for debugging
-          console.log("Base Price:", totalPackagePrice);
-          console.log("Coupon Data:", appliedCouponData);
-
           if (appliedCouponData.couponType === 'PERCENTAGE') {
-            if (typeof totalPackagePrice === 'number' && typeof appliedCouponData.discountValue === 'number') {
-              calculatedDiscount = (totalPackagePrice * appliedCouponData.discountValue) / 100;
-            } else {
-              console.error("Invalid data types for percentage calculation.");
-            }
+            calculatedDiscount = (basePrice * appliedCouponData.discountValue) / 100;
           } else if (appliedCouponData.couponType === 'FIXED_VALUE') {
-            if (typeof appliedCouponData.discountValue === 'number') {
-              calculatedDiscount = appliedCouponData.discountValue;
-            } else {
-              console.error("Invalid data type for fixed value discount.");
-            }
+            calculatedDiscount = appliedCouponData.discountValue;
           }
 
-          // Log the calculated discount
-          console.log("Calculated Discount:", calculatedDiscount);
+          // Ensure discount doesn't exceed total amount
+          calculatedDiscount = Math.min(calculatedDiscount, basePrice + deliveryCharge);
 
           setAppliedCoupon(appliedCouponData);
           setDiscount(calculatedDiscount);
@@ -187,89 +176,96 @@ const CheckoutPage = () => {
       return;
     }
 
+    setShowPaymentMethods(true);
+  };
+
+  const handlePayNow = () => {
     setShowConfirmation(true);
   };
 
-  const handleConfirmBooking = async () => {
-    setShowConfirmation(false);
-    setIsProcessing(true);
-
+  const createBooking = async (paymentMethod) => {
     try {
-      // Fetch the logged-in user's ID using the token
-      const token = localStorage.getItem("jwtToken"); // Ensure you have stored the JWT token
-      if (!token) {
-        throw new Error("User is not logged in.");
-      }
+      const token = localStorage.getItem("jwtToken");
+      if (!token) throw new Error("User not logged in.");
 
-      const userResponse = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/booking/user/id`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const userId = userResponse.data; // Get user ID from response
-
-      const isDeliverySelected = pickupOption === "DELIVERY_AT_LOCATION";
+      const formatToLocalDateTime = (date) => {
+        const d = new Date(date);
+        return d.toISOString().slice(0, 19);
+      };
 
       const bookingDetails = {
         vehicleId: bike.id,
-        userId: userId,
+        userId: user.id,
         packageId: selectedPackage.id,
-        totalAmount: payableAmount,
-        startTime: new Date(pickupDate).toISOString().replace(/\..+/, ''), // Remove milliseconds and timezone offset
-        endTime: new Date(dropDate).toISOString().replace(/\..+/, ''), // Remove milliseconds and timezone offset
+        totalAmount: totalAmountBeforeDiscount - discount,
+        addressType: pickupOption,
+        deliveryLocation: pickupOption === "DELIVERY_AT_LOCATION" ? JSON.stringify(addressDetails) : "",
+        deliverySelected: pickupOption === "DELIVERY_AT_LOCATION",
+        startTime: formatToLocalDateTime(pickupDate),
+        endTime: formatToLocalDateTime(dropDate),
+        damage: 0.0,
+        challan: 0.0,
+        additionalCharges: 0.0,
+        paymentMethod: paymentMethod,
         couponCode: appliedCoupon?.code || null,
-        deliveryCharge: deliveryCharge,
-        serviceCharge: serviceCharge,
-        depositAmount: depositAmount,
-        deliverySelected: isDeliverySelected,
-        deliveryLocation: isDeliverySelected ? JSON.stringify(addressDetails) : null, // Convert addressDetails to string if delivery is selected
       };
 
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/booking/book`,
         bookingDetails,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const completeOrder = {
-        ...response.data,
-        bikeDetails: bike,
-        totalPrice: payableAmount,
-        rentalDays,
-        selectedPackage,
-        pickupOption, // Ensure pickupOption is included
-        addressDetails,
-        pickupDate,
-        dropDate,
-        status: response.data.status || "Confirmed",
-      };
-
-      console.log("Booking confirmed:", completeOrder);
-
-      // Set the document message
-      setDocumentMessage(response.data.documentMessage || "");
-
-      // Insert the previously commented-out booking confirmation code here
-      setBookingConfirmed(true);
-      addOrder({ completeOrder });
-
+      return response.data;
     } catch (error) {
-      console.error("Booking error:", error);
-      if (error.response) {
-        console.error("Response data:", error.response.data);
-        setBookingError(error.response.data.message || "An error occurred");
-      } else {
-        setBookingError(error.message || "An error occurred");
-      }
+      console.error("Booking creation failed:", error);
+      throw error;
+    }
+  };
+
+  const handlePaymentSuccess = (bookingData) => {
+    const completeOrder = {
+      ...bookingData,
+      bikeDetails: bike,
+      totalPrice: totalAmountBeforeDiscount - discount,
+      rentalDays,
+      selectedPackage,
+      pickupOption,
+      addressDetails,
+      pickupDate,
+      dropDate,
+      status: "Confirmed",
+    };
+
+    setDocumentMessage(bookingData.documentMessage || "");
+    setBookingConfirmed(true);
+    addOrder({ completeOrder });
+    navigate("/orders");
+  };
+
+  const handleCODPayment = async () => {
+    setShowConfirmation(false);
+    setIsProcessing(true);
+
+    try {
+      const bookingData = await createBooking("CASH_ON_CENTER");
+      handlePaymentSuccess(bookingData);
+    } catch (error) {
+      setBookingError(error.response?.data?.message || "Booking failed");
+    } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleOnlinePayment = async () => {
+    setShowConfirmation(false);
+    setIsProcessing(true);
+
+    try {
+      const bookingData = await createBooking("ONLINE");
+      handlePaymentSuccess(bookingData);
+    } catch (error) {
+      setBookingError(error.response?.data?.message || "Booking failed");
     } finally {
       setIsProcessing(false);
     }
@@ -307,7 +303,7 @@ const CheckoutPage = () => {
               <div>
                 <h3 className="text-lg font-semibold">{bike?.model}</h3>
                 <p className="text-sm text-gray-600">
-                  Package: {selectedPackage?.days} Days (₹{selectedPackage?.price}/day)
+                  Package: {selectedPackage?.days} Days (₹{selectedPackage?.price})
                 </p>
                 <p className="text-sm text-gray-600">Duration: {rentalDays} Days</p>
               </div>
@@ -315,7 +311,7 @@ const CheckoutPage = () => {
 
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">
-                <FaRegCalendarAlt className="inline mr-2 text-orange-500" />
+                <FaRegCalendarAlt className="inline mr-2 text-indigo-500" />
                 Pickup/Drop Dates
               </h3>
               <div className="flex items-center space-x-2">
@@ -326,15 +322,17 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700">
-                <FaMapMarkerAlt className="inline mr-2 text-orange-500" />
-                {pickupOption}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {pickupOption === "SELF_PICKUP" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
-              </p>
-            </div>
+            {pickupOption === "DELIVERY_AT_LOCATION" && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700">
+                  <FaMapMarkerAlt className="inline mr-2 text-indigo-500" />
+                  Delivery Address
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {addressDetails?.fullAddress || "Our Store Location: Rental Street"}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">Terms & Conditions</h3>
@@ -351,7 +349,6 @@ const CheckoutPage = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">Apply Coupon</h3>
               <div className="space-y-3">
-                {/* Dropdown for selecting from available coupons */}
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Select Available Coupon:</label>
                   <select
@@ -368,7 +365,6 @@ const CheckoutPage = () => {
                   </select>
                 </div>
 
-                {/* Text input for custom coupon code */}
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Or Enter Coupon Code:</label>
                   <input
@@ -382,7 +378,7 @@ const CheckoutPage = () => {
 
                 <button
                   onClick={handleApplyCoupon}
-                  className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600"
+                  className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600"
                 >
                   Apply Coupon
                 </button>
@@ -412,35 +408,43 @@ const CheckoutPage = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Base Price:</span>
-                  <span>₹{totalPackagePrice}</span>
+                  <span>₹{basePrice}</span>
                 </div>
-                <div className="flex justify-between text-pink-500">
-                  <span>Delivery Charge:</span>
-                  <span>₹{deliveryCharge}</span>
-                </div>
-                <div className="flex justify-between text-pink-500">
+
+                {deliveryCharge > 0 && (
+                  <div className="flex justify-between">
+                    <span>Delivery Charge:</span>
+                    <span>₹{deliveryCharge}</span>
+                  </div>
+                )}
+
+                {/* <div className="flex justify-between">
                   <span>Convenience Fee:</span>
                   <span>₹{serviceCharge}</span>
-                </div>
-                <div className="flex justify-between text-pink-500">
-                  <span>Security Deposit:</span>
-                  <span className="text-green-500 font-semibold">
-                    (Refundable after trip) ₹{depositAmount}
-                  </span>
-                </div>
-                <div className="flex justify-between text-pink-500">
+                </div> */}
+
+                <div className="flex justify-between">
                   <span>GST (18%):</span>
                   <span>₹{gstAmount.toFixed(2)}</span>
                 </div>
+
+                <div className="flex justify-between">
+                  <span>Security Deposit:</span>
+                  <span className="text-green-500 font-semibold">
+                    (Refundable) ₹{depositAmount}
+                  </span>
+                </div>
+
                 {discount > 0 && (
                   <div className="flex justify-between text-teal-500">
                     <span>Discount:</span>
-                    <span>-₹{discount}</span>
+                    <span>-₹{discount.toFixed(2)}</span>
                   </div>
                 )}
+
                 <div className="flex justify-between font-semibold border-t pt-2">
                   <span>Total Payable:</span>
-                  <span>₹{payableAmount.toFixed(2)}</span>
+                  <span>₹{(totalAmountBeforeDiscount - discount).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -467,69 +471,76 @@ const CheckoutPage = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <button
-                onClick={handleConfirmationRequest}
-                disabled={isProcessing}
-                className={`w-full py-2 px-4 rounded-lg transition-colors ${
-                  isProcessing
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-orange-500 hover:bg-orange-600 text-white"
-                }`}
-              >
-                {isProcessing ? "Processing..." : `Confirm Booking: ₹${payableAmount.toFixed(2)}`}
-              </button>
               <p className="text-left mt-1 font-semibold">
-                Total Payment in Words: {convertToWords(payableAmount)}
+                Total Payment in Words: {convertToWords(totalAmountBeforeDiscount - discount)}
               </p>
             </div>
+
+            <button
+              onClick={handleConfirmationRequest}
+              disabled={isProcessing}
+              className={`w-full py-2 px-4 rounded-lg transition-colors ${
+                isProcessing
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-indigo-500 hover:bg-indigo-600 text-white"
+              }`}
+            >
+              {isProcessing ? "Processing..." : `Pay Now`}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Confirmation Dialog */}
-      <AnimatePresence>
-        {showConfirmation && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      // Remove the import for AsyncRazorpayButton
+// import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
+
+// Inside the return statement, modify the payment methods section:
+
+<AnimatePresence>
+  {showPaymentMethods && (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full m-4"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ type: "spring", damping: 25 }}
+      >
+        <h3 className="text-xl font-bold text-gray-800 mb-4">Select Payment Method</h3>
+        <div className="space-y-4">
+          <button
+            onClick={handleCODPayment}
+            disabled={isProcessing}
+            className={`w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-colors ${
+              isProcessing ? "cursor-not-allowed opacity-75" : ""
+            }`}
           >
-            <motion.div
-              className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full m-4"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ type: "spring", damping: 25 }}
-            >
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Confirm Booking</h3>
-              <p className="text-gray-600 mb-6">Are you sure you want to confirm your booking for {bike?.model}?</p>
+            Cash on Delivery (COD)
+          </button>
 
-              <div className="bg-orange-50 border border-orange-200 p-3 rounded-md mb-6">
-                <p className="text-orange-700 font-medium">Total Amount: ₹{payableAmount.toFixed(2)}</p>
-                <p className="text-orange-600 text-sm">Duration: {rentalDays} Days</p>
-              </div>
+          {/* Replace Razorpay button with a "Coming Soon" message */}
+          <div className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-center">
+            Razorpay - Coming Soon
+          </div>
+        </div>
+        <button
+          onClick={() => setShowPaymentMethods(false)}
+          disabled={isProcessing}
+          className="mt-4 w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+        >
+          Cancel
+        </button>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowConfirmation(false)}
-                  className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmBooking}
-                  className="flex-1 py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
-                >
-                  Confirm
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Success Animation */}
       <AnimatePresence>
         {bookingConfirmed && (
           <motion.div
@@ -567,28 +578,17 @@ const CheckoutPage = () => {
                 <button
                   className="bg-green-500 text-white px-4 py-2 rounded"
                   onClick={() => {
-                    // Handle OK button click and redirect to orders page
                     navigate("/orders");
                   }}
                 >
                   OK
                 </button>
-                {/* <button
-                  className="bg-red-500 text-white px-4 py-2 rounded"
-                  onClick={() => {
-                    // Handle Cancel button click
-                    setBookingConfirmed(false);
-                  }}
-                >
-                  Cancel
-                </button> */}
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Error Animation */}
       <AnimatePresence>
         {bookingError && (
           <motion.div

@@ -68,8 +68,8 @@ const RegistrationPopup = ({ onClose, openLogin }) => {
   };
 
   const verifyOTP = async () => {
-    if (otp.length !== 6) {
-      setError("Enter a valid 6-digit OTP.");
+    if (otp.length !== 4) {
+      setError("Enter a valid 4-digit OTP.");
       return;
     }
 
