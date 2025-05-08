@@ -409,7 +409,7 @@ const RegistrationPage = () => {
               <>
                 <input
                   type="number"
-                  placeholder="Enter 6-digit OTP"
+                  placeholder="Enter 4-digit OTP"
                   className="border p-2 w-full mb-2"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.slice(0, 6))}

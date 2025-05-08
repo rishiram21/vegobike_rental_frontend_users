@@ -104,6 +104,12 @@ const LoginPopup = ({ onClose, openRegistration }) => {
     }
   };
 
+  // Handle resend OTP
+  const handleResendOTP = () => {
+    setOtp("");
+    sendOTP();
+  };
+
   // Success animation component
   const SuccessAnimation = () => {
     return (
@@ -292,6 +298,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
               maxLength={10}
               ref={mobileInputRef}
               onKeyPress={(e) => !otpSent && handleKeyPress(e, sendOTP)}
+              disabled={otpSent && loading}
               autoFocus
             />
 
@@ -309,22 +316,37 @@ const LoginPopup = ({ onClose, openRegistration }) => {
               <>
                 <input
                   type="number"
-                  placeholder="Enter 6-digit OTP"
+                  placeholder="Enter 4-digit OTP"
                   className="border p-2 w-full mt-2"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  maxLength={4}
                   ref={otpInputRef}
                   onKeyPress={(e) => handleKeyPress(e, verifyOTP)}
                 />
                 <button
                   onClick={verifyOTP}
-                  disabled={loading || otp.length !== 6}
+                  disabled={loading || otp.length !== 4}
                   className={`bg-green-500 text-white px-4 py-2 w-full mt-2 ${
                     loading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
                   {loading ? "Verifying..." : "Verify OTP"}
                 </button>
+
+                <div className="text-center mt-2">
+                    <button
+                      onClick={handleResendOTP}
+                      disabled={loading}
+                      className={`text-blue-500 underline text-sm ${
+                        loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                      }`}
+                    >
+                      Resend OTP
+                    </button>
+                  </div>
+
+
               </>
             )}
 

@@ -25,7 +25,7 @@ const Footer = () => {
                   Home
                 </a>
               </li>
-              <li>
+              {/* <li>
                 <a href="/about" className="text-sm hover:text-gray-400">
                   About Us
                 </a>
@@ -34,7 +34,7 @@ const Footer = () => {
                 <a href="/services" className="text-sm hover:text-gray-400">
                   Services
                 </a>
-              </li>
+              </li> */}
               <li>
                 <a href="/contactus" className="text-sm hover:text-gray-400">
                   Contact

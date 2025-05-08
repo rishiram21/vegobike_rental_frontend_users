@@ -5,7 +5,7 @@ import { FaRegCalendarAlt, FaMapMarkerAlt, FaClipboardCheck, FaExclamationTriang
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import numberToWords from 'number-to-words';
-import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
+// import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
 
 const convertToWords = (amount) => {
   const rupees = Math.floor(amount);
@@ -490,11 +490,6 @@ const CheckoutPage = () => {
           </div>
         </div>
       </div>
-
-      // Remove the import for AsyncRazorpayButton
-// import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
-
-// Inside the return statement, modify the payment methods section:
 
 <AnimatePresence>
   {showPaymentMethods && (
