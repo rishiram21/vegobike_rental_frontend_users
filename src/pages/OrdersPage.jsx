@@ -517,7 +517,10 @@ const OrdersPage = () => {
       <div className="p-4 border-t border-gray-100 flex justify-between items-center">
         {order.booking.status === "BOOKING_ACCEPTED" && (
           <button
-            onClick={() => handleStartTrip(order)}
+            onClick={() => {
+              handleStartTrip(order);
+              fetchOrders(); // Refresh orders after starting the trip
+            }}
             className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
           >
             Start Trip
@@ -526,7 +529,10 @@ const OrdersPage = () => {
         {order.booking.status === "START_TRIP" && (
           <>
             <button
-              onClick={() => handleEndTrip(order)}
+              onClick={() => {
+                handleEndTrip(order);
+                fetchOrders(); // Refresh orders after ending the trip
+              }}
               className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
               disabled={order.booking.status === "END_TRIP"} // Disable if status is END_TRIP
             >
@@ -552,7 +558,10 @@ const OrdersPage = () => {
         ) : (
           order.booking.status !== "COMPLETED" && order.booking.status !== "BOOKING_ACCEPTED" && order.booking.status !== "START_TRIP" && order.booking.status !== "END_TRIP" && (
             <button
-              onClick={() => handleCancelBooking(order.booking.bookingId)}
+              onClick={() => {
+                handleCancelBooking(order.booking.bookingId);
+                fetchOrders(); // Refresh orders after cancellation
+              }}
               className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
             >
               Cancel Booking
@@ -596,7 +605,15 @@ const OrdersPage = () => {
     <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50 relative">
       <ToastContainer />
       <div className="container mx-auto max-w-6xl">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">My Orders</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-800">My Orders</h1>
+          <button
+            onClick={fetchOrders}
+            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+          >
+            Refresh Orders
+          </button>
+        </div>
         {mostRecentOrder === null && otherOrders.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <h2 className="text-2xl font-bold mb-4">No Orders Found</h2>

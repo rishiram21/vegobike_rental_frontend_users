@@ -55,6 +55,7 @@ const App = () => {
         <Router>
           <ConditionalNavbar>
             <Routes>
+
               {/* Default Route - HomePage will be shown at root "/" */}
               <Route path="/" element={<HomePage />} />
 

@@ -17,6 +17,9 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
+
+  
+
   useEffect(() => {
     const storedData = JSON.parse(localStorage.getItem("formData"));
     if (storedData && Object.keys(storedData).length > 0) {
@@ -133,13 +136,48 @@ const Navbar = () => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   };
 
-  const handleLogout = () => {
+  // const handleLogout = () => {
+  //   localStorage.removeItem("jwtToken");
+  //   localStorage.removeItem("userData");
+  //   setIsLoggedIn(false);
+  //   setUserData(null);
+  //   navigate("/");
+  // };
+
+
+  const handleLogout = async () => {
+  try {
+    // Attempt server logout first
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/logout`, {
+      method: "POST",
+      credentials: "include", // If you need to include credentials (cookies)
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`, // If using Bearer token
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Logout failed");
+    }
+
+    // Clear client-side storage
     localStorage.removeItem("jwtToken");
     localStorage.removeItem("userData");
-    setIsLoggedIn(false);
-    setUserData(null);
+    sessionStorage.removeItem("sessionData"); // If using sessionStorage
+
+    // Force full page reload to clear all application state
+    window.location.href = "/";
+  } catch (error) {
+    console.error("Logout failed:", error);
+    // Fallback cleanup if server unavailable
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("userData");
     navigate("/");
-  };
+  }
+};
+
+
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white text-gray-800 shadow-lg' : 'bg-indigo-900 text-white'}`}>

@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FaMapMarkerAlt, FaCalendarAlt, FaTags } from "react-icons/fa";
+import { FaMapMarkerAlt, FaCalendarAlt, FaTags, FaSyncAlt } from "react-icons/fa";
 import { AiOutlinePlus, AiOutlineMinus, AiOutlineCaretDown, AiOutlineCaretUp } from "react-icons/ai";
 import LoginPopup from "../components/LoginPopup";
 import RegistrationPopup from "../components/RegistrationPopup";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGlobalState } from "../context/GlobalStateContext";
+import { useAuth } from "../context/AuthContext";
 
 const BikeDetailsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const bike = location.state || {};
   const { formData, setFormData } = useGlobalState();
+  const { token } = useAuth();
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
   const [isRegistrationPopupOpen, setIsRegistrationPopupOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -35,7 +37,10 @@ const BikeDetailsPage = () => {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("jwtToken");
+    console.log("Token from AuthContext:", token);
+  }, [token]);
+
+  useEffect(() => {
     if (token) {
       setIsLoggedIn(true);
     }
@@ -45,7 +50,7 @@ const BikeDetailsPage = () => {
     }
 
     window.scrollTo(0, 0);
-  }, [bike.categoryId]);
+  }, [bike.categoryId, token]);
 
   useEffect(() => {
     if (packages.length > 0 && selectedPackage) {
@@ -75,6 +80,10 @@ const BikeDetailsPage = () => {
     }
   };
 
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   const handlePackageSelection = (pkg) => {
     setSelectedPackage(pkg);
     setDropdownOpen(false);
@@ -85,7 +94,6 @@ const BikeDetailsPage = () => {
     const newRentalDays = rentalDays + 1;
     setRentalDays(newRentalDays);
 
-    // Update the global state with the new rental days and dates
     const newDropDate = new Date(formData.startDate);
     newDropDate.setDate(newDropDate.getDate() + newRentalDays);
 
@@ -100,7 +108,6 @@ const BikeDetailsPage = () => {
     const newRentalDays = Math.max(1, rentalDays - 1);
     setRentalDays(newRentalDays);
 
-    // Update the global state with the new rental days and dates
     const newDropDate = new Date(formData.startDate);
     newDropDate.setDate(newDropDate.getDate() + newRentalDays);
 
@@ -376,6 +383,13 @@ const BikeDetailsPage = () => {
             className="w-full py-3 bg-indigo-400 text-white font-semibold rounded hover:bg-indigo-500 transition-all duration-300"
           >
             Proceed to Checkout
+          </button>
+
+          <button
+            onClick={handleRefresh}
+            className="fixed bottom-4 right-4 bg-indigo-500 text-white p-3 square shadow-lg z-50 flex items-center gap-2"
+          >
+            <FaSyncAlt size={24} />
           </button>
 
           {isLoginPopupOpen && (

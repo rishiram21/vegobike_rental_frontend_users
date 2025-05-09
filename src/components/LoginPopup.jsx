@@ -9,7 +9,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
   const [error, setError] = useState("");
   const [alertMessage, setAlertMessage] = useState(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  
+
   // Add refs for input fields
   const mobileInputRef = useRef(null);
   const otpInputRef = useRef(null);
@@ -43,7 +43,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
 
       setOtpSent(true);
       showAlert("OTP sent successfully!");
-      
+
       // Focus on OTP input after a short delay to allow rendering
       setTimeout(() => {
         if (otpInputRef.current) {
@@ -81,13 +81,14 @@ const LoginPopup = ({ onClose, openRegistration }) => {
 
       // Store JWT token in localStorage
       localStorage.setItem("jwtToken", data.token);
-      
+
       // Show success animation instead of text alert
       setShowSuccessAnimation(true);
-      
+
       setTimeout(() => {
         onClose();
         navigate("/checkout"); // Redirect to checkout or dashboard
+        window.location.reload(); // Refresh the page
       }, 2000);
     } catch (err) {
       setError(err.message);
@@ -282,7 +283,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
             {alertMessage}
           </div>
         )}
-        
+
         {showSuccessAnimation ? <SuccessAnimation /> : (
           <>
             <h2 className="text-xl font-bold mb-4">Login</h2>
@@ -345,8 +346,6 @@ const LoginPopup = ({ onClose, openRegistration }) => {
                       Resend OTP
                     </button>
                   </div>
-
-
               </>
             )}
 

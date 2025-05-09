@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useGlobalState } from "../context/GlobalStateContext";
-import { FaRegCalendarAlt, FaMapMarkerAlt, FaClipboardCheck, FaExclamationTriangle } from "react-icons/fa";
+import { FaRegCalendarAlt, FaMapMarkerAlt, FaClipboardCheck, FaExclamationTriangle, FaSyncAlt } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import numberToWords from 'number-to-words';
-// import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
+import { useAuth } from "../context/AuthContext"; // Import useAuth for token management
 
 const convertToWords = (amount) => {
   const rupees = Math.floor(amount);
@@ -19,6 +19,7 @@ const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addOrder, user } = useGlobalState();
+  const { token } = useAuth(); // Use the token from AuthContext
 
   const [checkoutData, setCheckoutData] = useState(location.state || {});
   const [loadingData, setLoadingData] = useState(true);
@@ -28,7 +29,7 @@ const CheckoutPage = () => {
   const [selectedCouponFromDropdown, setSelectedCouponFromDropdown] = useState("");
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(true);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [couponError, setCouponError] = useState("");
@@ -36,7 +37,24 @@ const CheckoutPage = () => {
   const [showTermsError, setShowTermsError] = useState(false);
   const [documentMessage, setDocumentMessage] = useState("");
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
-  const refreshInterval = 60000; // 60 seconds
+
+  useEffect(() => {
+    // Check if the URL already has our reload parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasReloaded = urlParams.get('reloaded');
+
+    if (!hasReloaded) {
+      // Add the parameter and reload
+      const newUrl = window.location.pathname + '?reloaded=true' +
+                     (window.location.hash || '');
+      window.location.href = newUrl;
+    }
+  }, []);
+
+  // Log the token when the component mounts
+  useEffect(() => {
+    console.log("Token from AuthContext:", token);
+  }, [token]);
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -52,6 +70,7 @@ const CheckoutPage = () => {
 
     const loadCheckoutData = () => {
       const sessionData = sessionStorage.getItem("checkoutData");
+      const termsAccepted = sessionStorage.getItem("termsAccepted");
 
       if (location.state) {
         setCheckoutData(location.state);
@@ -59,23 +78,29 @@ const CheckoutPage = () => {
       } else if (sessionData) {
         setCheckoutData(JSON.parse(sessionData));
       }
-    };
 
-    const fetchCheckoutData = async () => {
-      const sessionData = sessionStorage.getItem("checkoutData");
-      if (sessionData) {
-        setCheckoutData(JSON.parse(sessionData));
+      if (termsAccepted) {
+        setTermsAccepted(JSON.parse(termsAccepted));
       }
     };
 
     fetchCoupons();
     loadCheckoutData();
     setLoadingData(false);
-
-    const intervalId = setInterval(fetchCheckoutData, refreshInterval);
-
-    return () => clearInterval(intervalId);
   }, [location.state]);
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  const handleCheckboxChange = () => {
+    // Store the current state in sessionStorage
+    sessionStorage.setItem("termsAccepted", !termsAccepted);
+    sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData));
+
+    // Reload the page
+    window.location.reload();
+  };
 
   const {
     bike = {},
@@ -90,7 +115,6 @@ const CheckoutPage = () => {
 
   const depositAmount = bike?.deposit || 0;
   const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
-  // const serviceCharge = 2;
 
   // Calculate base price with extra days
   const packagePrice = selectedPackage?.price || 0;
@@ -185,7 +209,6 @@ const CheckoutPage = () => {
 
   const createBooking = async (paymentMethod) => {
     try {
-      const token = localStorage.getItem("jwtToken");
       if (!token) throw new Error("User not logged in.");
 
       const formatToLocalDateTime = (date) => {
@@ -418,11 +441,6 @@ const CheckoutPage = () => {
                   </div>
                 )}
 
-                {/* <div className="flex justify-between">
-                  <span>Convenience Fee:</span>
-                  <span>₹{serviceCharge}</span>
-                </div> */}
-
                 <div className="flex justify-between">
                   <span>GST (18%):</span>
                   <span>₹{gstAmount.toFixed(2)}</span>
@@ -454,7 +472,7 @@ const CheckoutPage = () => {
                 <input
                   type="checkbox"
                   checked={termsAccepted}
-                  onChange={() => setTermsAccepted(!termsAccepted)}
+                  onChange={handleCheckboxChange}
                   className="h-4 w-4"
                 />
                 <span className="text-sm">I agree to terms & conditions</span>
@@ -491,50 +509,55 @@ const CheckoutPage = () => {
         </div>
       </div>
 
-<AnimatePresence>
-  {showPaymentMethods && (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full m-4"
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        transition={{ type: "spring", damping: 25 }}
+      {/* <button
+        onClick={handleRefresh}
+        className="fixed bottom-4 right-4 bg-indigo-500 text-white p-3 square shadow-lg z-50 flex items-center gap-2"
       >
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Select Payment Method</h3>
-        <div className="space-y-4">
-          <button
-            onClick={handleCODPayment}
-            disabled={isProcessing}
-            className={`w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-colors ${
-              isProcessing ? "cursor-not-allowed opacity-75" : ""
-            }`}
+        <FaSyncAlt size={24} />
+      </button> */}
+
+      <AnimatePresence>
+        {showPaymentMethods && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            Cash on Delivery (COD)
-          </button>
+            <motion.div
+              className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full m-4"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25 }}
+            >
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Select Payment Method</h3>
+              <div className="space-y-4">
+                <button
+                  onClick={handleCODPayment}
+                  disabled={isProcessing}
+                  className={`w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-colors ${
+                    isProcessing ? "cursor-not-allowed opacity-75" : ""
+                  }`}
+                >
+                  Cash on Delivery (COD)
+                </button>
 
-          {/* Replace Razorpay button with a "Coming Soon" message */}
-          <div className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-center">
-            Razorpay - Coming Soon
-          </div>
-        </div>
-        <button
-          onClick={() => setShowPaymentMethods(false)}
-          disabled={isProcessing}
-          className="mt-4 w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-        >
-          Cancel
-        </button>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
-
+                <div className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-center">
+                  Razorpay - Coming Soon
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPaymentMethods(false)}
+                disabled={isProcessing}
+                className="mt-4 w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {bookingConfirmed && (

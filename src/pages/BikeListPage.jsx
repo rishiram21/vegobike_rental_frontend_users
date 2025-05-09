@@ -52,6 +52,32 @@ const BikeListPage = () => {
   const filterRef = useRef(null);
   const bikesPerPage = 8;
 
+  useEffect(() => {
+    // Function to execute the reload
+    const performReload = () => {
+      // First, try the simplest approach - adding a timestamp to force a clean reload
+      const timestamp = new Date().getTime();
+      const refreshedUrl = window.location.pathname + 
+                          (window.location.search ? 
+                            window.location.search + '&_=' + timestamp : 
+                            '?_=' + timestamp);
+      
+      // Use replace instead of assign to avoid adding to browser history
+      window.location.replace(refreshedUrl);
+    };
+
+    // Check if reload has been performed using a flag in sessionStorage
+    const reloadFlag = window.sessionStorage.getItem('pageHasReloaded');
+    
+    if (!reloadFlag) {
+      // Set the flag immediately
+      window.sessionStorage.setItem('pageHasReloaded', 'true');
+      
+      // Use a small timeout to ensure the flag is set before reloading
+      setTimeout(performReload, 50);
+    }
+  }, []);
+
   // Log the token when the component mounts
   useEffect(() => {
     console.log("Token from AuthContext:", token);

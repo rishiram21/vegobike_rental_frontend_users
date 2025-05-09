@@ -27,7 +27,20 @@ const ProfilePage = () => {
     drivingLicense: { image: null, status: null },
   });
   const navigate = useNavigate();
-  const refreshInterval = 60000; // 60 seconds
+
+
+  useEffect(() => {
+      // Check if the URL already has our reload parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasReloaded = urlParams.get('reloaded');
+      
+      if (!hasReloaded) {
+        // Add the parameter and reload
+        const newUrl = window.location.pathname + '?reloaded=true' + 
+                       (window.location.hash || '');
+        window.location.href = newUrl;
+      }
+    }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
@@ -37,6 +50,8 @@ const ProfilePage = () => {
       navigate("/login");
       return;
     }
+
+
 
     const fetchUserProfile = async () => {
       try {
@@ -81,10 +96,6 @@ const ProfilePage = () => {
     };
 
     fetchUserProfile();
-
-    const intervalId = setInterval(fetchUserProfile, refreshInterval);
-
-    return () => clearInterval(intervalId);
   }, [navigate]);
 
   const toggleDocSection = () => {
@@ -244,26 +255,24 @@ const ProfilePage = () => {
                   <h3 className="text-2xl font-bold text-gray-800 mb-2 md:mb-0">
                     {userData?.name || "Your Name"}
                   </h3>
-                  
+
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ProfileDetail 
-                    icon={<FaPhone className="text-lg" />} 
-                    label="Phone Number" 
-                    value={userData?.phoneNumber} 
+                  <ProfileDetail
+                    icon={<FaPhone className="text-lg" />}
+                    label="Phone Number"
+                    value={userData?.phoneNumber}
                   />
-                  
-                  <ProfileDetail 
-                    icon={<FaEnvelope className="text-lg" />} 
-                    label="Email Address" 
-                    value={userData?.email || "Add your email"} 
+
+                  <ProfileDetail
+                    icon={<FaEnvelope className="text-lg" />}
+                    label="Email Address"
+                    value={userData?.email || "Add your email"}
                   />
-                  
-                 
+
                 </div>
 
-                
               </div>
             </motion.div>
 
