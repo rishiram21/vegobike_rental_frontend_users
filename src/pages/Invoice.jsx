@@ -28,8 +28,8 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
 
   // Calculate subtotal and total
   const gst = packagePrice * 0.18;
-  const convenienceFee = 2.00;
-  const subtotal = packagePrice + gst + convenienceFee;
+  // const convenienceFee = 2.00;
+  const subtotal = packagePrice + gst;
   const additionalChargesTotal = charges.reduce((sum, charge) => sum + Number(charge.amount), 0);
   const challansTotal = challans.reduce((sum, challan) => sum + Number(challan.amount), 0);
   const damagesTotal = damages.reduce((sum, damage) => sum + Number(damage.amount), 0);
@@ -116,8 +116,8 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
         <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-8 rounded-t-lg flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">OkBikes</h1>
-              <p className="text-blue-100">Ride with confidence</p>
+              <img src="/vegologo.png" alt="VegoBike Logo" className="h-10 w-10" />
+              <h1 className="text-3xl font-bold tracking-tight">VegoBike</h1>
             </div>
           </div>
           <div className="text-right">
@@ -229,10 +229,10 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
                     <td className="py-3 px-4 text-gray-700">GST (18%)</td>
                     <td className="py-3 px-4 text-gray-700 text-right">₹{gst.toFixed(2)}</td>
                   </tr>
-                  <tr>
+                  {/* <tr>
                     <td className="py-3 px-4 text-gray-700">Convenience Fee</td>
                     <td className="py-3 px-4 text-gray-700 text-right">₹{convenienceFee.toFixed(2)}</td>
-                  </tr>
+                  </tr> */}
                   {charges.map((charge, index) => (
                     <tr key={index}>
                       <td className="py-3 px-4 text-gray-700">{charge.type}</td>
@@ -287,13 +287,13 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
 
           {/* Footer */}
           <div className="text-center text-sm text-gray-600 mt-8 border-t border-gray-200 pt-6">
-            <p className="font-medium">Thank you for choosing OkBikes!</p>
+            <p className="font-medium">Thank you for choosing VegoBike!</p>
             <div className="flex justify-center items-center mt-2 space-x-4">
               <div className="flex items-center">
                 <svg className="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span>support@okbikes.com</span>
+                <span>support@VegoBike.com</span>
               </div>
               <div className="flex items-center">
                 <svg className="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
