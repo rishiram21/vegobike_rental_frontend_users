@@ -35,6 +35,9 @@ const BikeDetailsPage = () => {
   const [rentalDays, setRentalDays] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     console.log("Token from AuthContext:", token);
@@ -50,7 +53,21 @@ const BikeDetailsPage = () => {
     }
 
     window.scrollTo(0, 0);
-  }, [bike.categoryId, token]);
+
+    // Set default dates on initial load
+    const currentDate = new Date();
+    const roundedStartDate = roundToNextHour(currentDate);
+    const roundedEndDate = new Date(roundedStartDate);
+    roundedEndDate.setDate(roundedStartDate.getDate() + 1);
+
+    setStartDate(formatDateForInput(roundedStartDate));
+    setEndDate(formatDateForInput(roundedEndDate));
+    setFormData((prevData) => ({
+      ...prevData,
+      startDate: formatDateForInput(roundedStartDate),
+      endDate: formatDateForInput(roundedEndDate),
+    }));
+  }, [bike.categoryId, token, setFormData]);
 
   useEffect(() => {
     if (packages.length > 0 && selectedPackage) {
@@ -90,32 +107,92 @@ const BikeDetailsPage = () => {
     setRentalDays(pkg.days);
   };
 
-  const handleIncreaseDays = () => {
-    const newRentalDays = rentalDays + 1;
-    setRentalDays(newRentalDays);
-
-    const newDropDate = new Date(formData.startDate);
-    newDropDate.setDate(newDropDate.getDate() + newRentalDays);
-
-    setFormData({
-      ...formData,
-      rentalDays: newRentalDays,
-      endDate: newDropDate,
-    });
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const handleDecreaseDays = () => {
-    const newRentalDays = Math.max(1, rentalDays - 1);
-    setRentalDays(newRentalDays);
+  const roundToNextHour = (date) => {
+    const roundedDate = new Date(date);
+    roundedDate.setHours(roundedDate.getHours() + 1, 0, 0, 0);
+    return roundedDate;
+  };
 
-    const newDropDate = new Date(formData.startDate);
-    newDropDate.setDate(newDropDate.getDate() + newRentalDays);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    let updatedStartDate = startDate;
+    let updatedEndDate = endDate;
+    let dateError = null;
 
-    setFormData({
-      ...formData,
-      rentalDays: newRentalDays,
-      endDate: newDropDate,
-    });
+    if (name === 'startDate') {
+      const selectedDate = new Date(value);
+      const currentDate = new Date();
+
+      // Validate start date is not in the past
+      if (selectedDate < currentDate) {
+        const newStartDate = roundToNextHour(currentDate);
+        updatedStartDate = formatDateForInput(newStartDate);
+        dateError = "Past dates can't be selected. Date set to next available time.";
+      } else {
+        updatedStartDate = value;
+      }
+
+      // If end date exists and is before new start date, adjust end date
+      if (endDate && new Date(endDate) <= new Date(updatedStartDate)) {
+        const newEndDate = new Date(updatedStartDate);
+        newEndDate.setDate(newEndDate.getDate() + 1);
+        updatedEndDate = formatDateForInput(newEndDate);
+      }
+    }
+
+    if (name === 'endDate') {
+      const selectedEndDate = new Date(value);
+      const startDateObj = new Date(startDate);
+
+      // Validate end date is after start date
+      if (selectedEndDate <= startDateObj) {
+        const newEndDate = new Date(startDateObj);
+        newEndDate.setDate(startDateObj.getDate() + 1);
+        updatedEndDate = formatDateForInput(newEndDate);
+        dateError = "End date must be after start date. Date adjusted.";
+      } else {
+        updatedEndDate = value;
+      }
+    }
+
+    // Update state with validated dates
+    setStartDate(updatedStartDate);
+    setEndDate(updatedEndDate);
+
+    // Update form data
+    setFormData(prevData => ({
+      ...prevData,
+      startDate: updatedStartDate,
+      endDate: updatedEndDate,
+      [name]: name === 'startDate' ? updatedStartDate : updatedEndDate
+    }));
+
+    // Set error if any
+    if (dateError) {
+      setErrors(prev => ({ ...prev, [name]: dateError }));
+      // Clear error after 3 seconds
+      setTimeout(() => {
+        setErrors(prev => ({ ...prev, [name]: "" }));
+      }, 3000);
+    }
+
+    // Calculate rental days based on the updated dates
+    if (updatedStartDate && updatedEndDate) {
+      const start = new Date(updatedStartDate);
+      const end = new Date(updatedEndDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setRentalDays(diffDays);
+    }
   };
 
   const calculateTotalPrice = () => {
@@ -197,8 +274,8 @@ const BikeDetailsPage = () => {
       pickupOption,
       deliveryCharge,
       pricePerDay: calculatePricePerDay(),
-      pickupDate: new Date(),
-      dropDate: new Date(Date.now() + (rentalDays * 24 * 60 * 60 * 1000)),
+      pickupDate: new Date(startDate),
+      dropDate: new Date(endDate),
       storeName: bike.storeName || "Our Store Location: Rental Street",
     };
 
@@ -303,20 +380,42 @@ const BikeDetailsPage = () => {
               <FaCalendarAlt className="inline mr-2 text-indigo-400" /> Rental Duration
             </h3>
             <div className="flex items-center gap-3">
-              <button
-                onClick={handleDecreaseDays}
-                className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-sm hover:bg-gray-300 transition-all"
-              >
-                <AiOutlineMinus />
-              </button>
               <span className="text-lg font-bold">{rentalDays} Days</span>
-              <button
-                onClick={handleIncreaseDays}
-                className="px-3 py-2 bg-gray-200 text-gray-800 rounded text-sm hover:bg-gray-300 transition-all"
-              >
-                <AiOutlinePlus />
-              </button>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">
+              <FaCalendarAlt className="inline mr-2 text-indigo-400" /> Start Date & Time
+            </h3>
+            <input
+              type="datetime-local"
+              name="startDate"
+              value={startDate}
+              min={formatDateForInput(new Date())}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 rounded-md"
+            />
+            {errors.startDate && (
+              <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-700">
+              <FaCalendarAlt className="inline mr-2 text-indigo-400" /> End Date & Time
+            </h3>
+            <input
+              type="datetime-local"
+              name="endDate"
+              value={endDate}
+              min={startDate}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 rounded-md"
+            />
+            {errors.endDate && (
+              <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
+            )}
           </div>
 
           <div className="space-y-4">

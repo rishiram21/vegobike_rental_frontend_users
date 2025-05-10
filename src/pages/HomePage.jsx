@@ -48,31 +48,26 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    // Check if the URL already has our reload parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasReloaded = urlParams.get('reloaded');
-    
-    if (!hasReloaded) {
-      // Add the parameter and reload
-      const newUrl = window.location.pathname + '?reloaded=true' + 
-                     (window.location.hash || '');
-      window.location.href = newUrl;
-    }
-  }, []);
-
-  // Prefetch data to improve responsiveness
-  useEffect(() => {
     // Scroll to the top of the page when the component mounts
     window.scrollTo(0, 0);
+
+    // Reset location to null when the page loads
+    setFormData((prevData) => ({
+      ...prevData,
+      location: null,
+      cityId: null
+    }));
 
     // Start loading animation
     const loadSequence = () => {
       setTimeout(() => {
-        document.querySelector('.main-banner').classList.add('active');
-        
+        const mainBanner = document.querySelector('.main-banner');
+        if (mainBanner) mainBanner.classList.add('active');
+
         setTimeout(() => {
-          document.querySelector('.booking-form').classList.add('active');
-          
+          const bookingForm = document.querySelector('.booking-form');
+          if (bookingForm) bookingForm.classList.add('active');
+
           setTimeout(() => {
             document.querySelectorAll('.feature-item').forEach((item, index) => {
               setTimeout(() => {
@@ -97,16 +92,6 @@ const HomePage = () => {
 
         const citiesData = response.data?.content || [];
         setCities(citiesData);
-        
-        // Prefetch bike availability for popular locations
-        if (citiesData.length > 0) {
-          setFormData(prevData => ({
-            ...prevData,
-            cityId: citiesData[0].id,
-            location: citiesData[0].name
-          }));
-          setSelectedCityImage(`data:image/jpeg;base64,${citiesData[0].image}`);
-        }
       } catch (error) {
         console.error("Error fetching cities:", error);
         setCities([]);
@@ -114,7 +99,21 @@ const HomePage = () => {
     };
 
     fetchCities();
-  }, []);
+  }, [setFormData]);
+
+  // Set default dates on initial load
+  useEffect(() => {
+    const currentDate = new Date();
+    const roundedStartDate = roundToNextHour(currentDate);
+    const roundedEndDate = new Date(roundedStartDate);
+    roundedEndDate.setDate(roundedStartDate.getDate() + 1);
+
+    setFormData((prevData) => ({
+      ...prevData,
+      startDate: formatDateForInput(roundedStartDate),
+      endDate: formatDateForInput(roundedEndDate),
+    }));
+  }, [setFormData]);
 
   // Optimize bike fetching with debounce and caching
   const fetchAvailableBikes = async (immediate = false) => {
@@ -131,7 +130,7 @@ const HomePage = () => {
     // Create a cache key for this specific request
     const cacheKey = `bikes_${formData.cityId}_${formData.startDate}_${formData.endDate}`;
     const cachedData = sessionStorage.getItem(cacheKey);
-    
+
     if (cachedData && !immediate) {
       const parsedData = JSON.parse(cachedData);
       setAvailableBikes(parsedData);
@@ -171,7 +170,7 @@ const HomePage = () => {
       } else {
         setAvailableBikes(bikesData);
       }
-      
+
       setIsLoading(false);
       return bikesData;
     } catch (error) {
@@ -185,19 +184,6 @@ const HomePage = () => {
     }
   };
 
-  useEffect(() => {
-    const currentDate = new Date();
-    const roundedStartDate = roundToNextHour(currentDate);
-    const roundedEndDate = new Date(roundedStartDate);
-    roundedEndDate.setDate(roundedStartDate.getDate() + 1);
-
-    setFormData((prevData) => ({
-      ...prevData,
-      startDate: formatDateForInput(roundedStartDate),
-      endDate: formatDateForInput(roundedEndDate),
-    }));
-  }, [setFormData]);
-
   // Background prefetching of bike data
   useEffect(() => {
     let timeoutId;
@@ -207,7 +193,7 @@ const HomePage = () => {
         fetchAvailableBikes(true); // true means it's a background fetch
       }, 300);
     }
-    
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
@@ -281,47 +267,61 @@ const HomePage = () => {
   const handleCitySelection = (city) => {
     // Add animation for selection
     setAnimationState(prev => ({...prev, citySelection: true}));
-    
+
     setFormData((prevData) => ({
       ...prevData,
-      location: city.name,
+      location: city.name, // Set the location to the selected city's name
       cityId: city.id,
     }));
-    
+
     // Smooth image transition
     const fadeOut = document.querySelector('.city-image-container');
-    fadeOut.classList.add('fade-out');
-    
-    setTimeout(() => {
-      setSelectedCityImage(`data:image/jpeg;base64,${city.image}`);
-      fadeOut.classList.remove('fade-out');
-      fadeOut.classList.add('fade-in');
-      
+    if (fadeOut) {
+      fadeOut.classList.add('fade-out');
+
       setTimeout(() => {
-        fadeOut.classList.remove('fade-in');
-        setPopupOpen(false);
-        setAnimationState(prev => ({...prev, citySelection: false}));
+        setSelectedCityImage(`data:image/jpeg;base64,${city.image}`);
+        fadeOut.classList.remove('fade-out');
+        fadeOut.classList.add('fade-in');
+
+        setTimeout(() => {
+          fadeOut.classList.remove('fade-in');
+          setPopupOpen(false);
+          setAnimationState(prev => ({...prev, citySelection: false}));
+        }, 300);
       }, 300);
-    }, 300);
+    } else {
+      setSelectedCityImage(`data:image/jpeg;base64,${city.image}`);
+      setPopupOpen(false);
+      setAnimationState(prev => ({...prev, citySelection: false}));
+    }
   };
 
   const handleSearch = async () => {
     // Add button animation
     setAnimationState(prev => ({...prev, searchBtn: true}));
-    
+
+    if (!formData.location) {
+      setErrors({ location: "Please select a location." });
+      setAnimationState(prev => ({...prev, searchBtn: false}));
+      return;
+    }
+
     // Navigate immediately if bikes are already loaded
     if (availableBikes.length > 0) {
       navigate("/bike-list", { state: { formData } });
       return;
     }
-    
+
     // If not loaded, fetch bikes with fast response
     const bikes = await fetchAvailableBikes();
-    
+
     if (bikes.length > 0) {
       navigate("/bike-list", { state: { formData } });
     } else if (lastFetchError) {
       setErrors({ location: lastFetchError });
+      setAnimationState(prev => ({...prev, searchBtn: false}));
+    } else {
       setAnimationState(prev => ({...prev, searchBtn: false}));
     }
   };
@@ -333,23 +333,24 @@ const HomePage = () => {
     : [];
 
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-col md:flex-row h-screen">
-        {/* Left Half (Image Section) */}
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section - Responsive for all screen sizes */}
+      <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen">
+        {/* Image Section - Full width on mobile, half width on desktop */}
         <div
-          className="w-full md:w-1/2 h-full bg-cover bg-center main-banner city-image-container"
+          className="w-full lg:w-1/2 h-64 lg:h-full bg-cover bg-center main-banner city-image-container"
           style={{
             backgroundImage: `url('${selectedCityImage}')`,
             transition: 'opacity 0.3s ease-in-out',
           }}
         ></div>
 
-        {/* Right Half (Form Section) */}
-        <div className="w-full md:w-1/2 h-full flex flex-col justify-center items-center p-8 bg-gradient-to-r from-indigo-900 to-indigo-600 slide-in-right">
-          <h1 className="text-4xl font-bold text-white mb-6 animate-pulse-once">
+        {/* Form Section - Full width on mobile, half width on desktop */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-4 lg:p-8 bg-gradient-to-r from-indigo-900 to-indigo-600 slide-in-right">
+          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4 lg:mb-6 animate-pulse-once text-center">
             Welcome to VegoBike
           </h1>
-          <div className="bg-white p-8 shadow-lg w-full max-w-md booking-form">
+          <div className="bg-white p-4 lg:p-8 shadow-lg w-full max-w-md booking-form rounded-lg">
             <div className="mb-4">
               <label
                 className="block text-indigo-800 font-medium mb-2"
@@ -361,11 +362,11 @@ const HomePage = () => {
                 type="text"
                 id="location"
                 name="location"
-                placeholder="Enter Location"
-                value={formData.location}
+                placeholder="Select a location"
+                value={formData.location || ""} // Display empty string if location is null
                 readOnly
                 onClick={() => setPopupOpen(true)}
-                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-900 hover:shadow-md transition-all duration-300 ${
+                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-900 hover:shadow-md transition-all duration-300 rounded-md ${
                   errors.location ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -373,6 +374,7 @@ const HomePage = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.location}</p>
               )}
             </div>
+
             <div className="mb-4">
               <label
                 className="block text-indigo-800 font-medium mb-2"
@@ -387,7 +389,7 @@ const HomePage = () => {
                 value={formData.startDate}
                 min={formatDateForInput(new Date())}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 ${
+                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 rounded-md ${
                   errors.startDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -409,7 +411,7 @@ const HomePage = () => {
                 value={formData.endDate}
                 min={formData.startDate}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 ${
+                className={`w-full px-4 py-2 border outline-none focus:ring-2 focus:ring-indigo-500 hover:shadow-md transition-all duration-300 rounded-md ${
                   errors.endDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
@@ -420,7 +422,7 @@ const HomePage = () => {
             <button
               onClick={handleSearch}
               disabled={isLoading || animationState.searchBtn}
-              className={`w-full bg-indigo-800 text-white rounded-full py-2 px-4 hover:bg-indigo-600 transition-all duration-300 transform hover:scale-103 active:scale-95 ${
+              className={`w-full bg-indigo-800 text-white rounded-full py-2 px-4 hover:bg-indigo-600 transition-all duration-300 transform hover:scale-105 active:scale-95 ${
                 animationState.searchBtn ? 'animate-pulse' : ''
               }`}
             >
@@ -430,10 +432,10 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* City Selection Popup */}
+      {/* City Selection Popup - Responsive for all screens */}
       {popupOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 animate-fade-in">
-          <div className="bg-white w-11/12 max-w-4xl p-6 relative animate-scale-up">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 animate-fade-in p-4">
+          <div className="bg-white w-full max-w-4xl p-4 lg:p-6 relative animate-scale-up rounded-lg max-h-[90vh] overflow-hidden flex flex-col">
             <button
               onClick={() => setPopupOpen(false)}
               className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 transition-colors duration-200"
@@ -446,10 +448,10 @@ const HomePage = () => {
               placeholder="Search or type city to select"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 mb-4 border focus:ring-2 focus:ring-indigo-500 outline-none transition-all duration-300"
+              className="w-full px-4 py-2 mb-4 border focus:ring-2 focus:ring-indigo-500 outline-none transition-all duration-300 rounded-md"
               autoFocus
             />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto flex-grow">
               {filteredCities.map((city, index) => (
                 <div
                   key={index}
@@ -457,14 +459,14 @@ const HomePage = () => {
                   style={{ animationDelay: `${index * 50}ms` }}
                   onClick={() => handleCitySelection(city)}
                 >
-                  <div className="w-20 h-20 overflow-hidden rounded-full border-2 border-indigo-300 transition-transform duration-300 hover:border-indigo-500">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 overflow-hidden rounded-full border-2 border-indigo-300 transition-transform duration-300 hover:border-indigo-500">
                     <img
                       src={`data:image/jpeg;base64,${city.image}`}
                       alt={city.name}
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                     />
                   </div>
-                  <span className="text-sm font-medium mt-2">{city.name}</span>
+                  <span className="text-sm font-medium mt-2 text-center">{city.name}</span>
                   <span className="text-xs text-gray-500">{city.state}</span>
                 </div>
               ))}
@@ -473,46 +475,46 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Additional Sections */}
-      <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 py-16">
+      {/* Why Choose VegoBike Section - Responsive grid */}
+      <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 py-10 lg:py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8 animate-bounce-once">
+          <h2 className="text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-6 lg:mb-8 animate-bounce-once">
             Why Choose VegoBike
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
             {[
               {
-                icon: <FaBicycle className="text-indigo-600 text-4xl mb-4" />,
+                icon: <FaBicycle className="text-indigo-600 text-3xl lg:text-4xl mb-3 lg:mb-4" />,
                 text: "Wide range of bikes.",
               },
               {
-                icon: <FaHandshake className="text-indigo-500 text-4xl mb-4" />,
+                icon: <FaHandshake className="text-indigo-500 text-3xl lg:text-4xl mb-3 lg:mb-4" />,
                 text: "Affordable pricing.",
               },
               {
-                icon: <FaPhone className="text-indigo-500 text-4xl mb-4" />,
+                icon: <FaPhone className="text-indigo-500 text-3xl lg:text-4xl mb-3 lg:mb-4" />,
                 text: "24/7 customer support.",
               },
               {
-                icon: <FaCheck className="text-indigo-500 text-4xl mb-4" />,
+                icon: <FaCheck className="text-indigo-500 text-3xl lg:text-4xl mb-3 lg:mb-4" />,
                 text: "Easy booking process.",
               },
               {
                 icon: (
-                  <FaMapMarkerAlt className="text-indigo-500 text-4xl mb-4" />
+                  <FaMapMarkerAlt className="text-indigo-500 text-3xl lg:text-4xl mb-3 lg:mb-4" />
                 ),
                 text: "Multiple locations.",
               },
               {
                 icon: (
-                  <FaCreditCard className="text-indigo-500 text-4xl mb-4" />
+                  <FaCreditCard className="text-indigo-500 text-3xl lg:text-4xl mb-3 lg:mb-4" />
                 ),
                 text: "Secure payment.",
               },
             ].map((reason, index) => (
               <div
                 key={index}
-                className="flex flex-col items-center text-center bg-white p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 feature-item"
+                className="flex flex-col items-center text-center bg-white p-4 lg:p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 feature-item rounded-lg"
               >
                 <div className="transform transition-transform duration-500 hover:rotate-12 hover:scale-110">
                   {reason.icon}
@@ -524,12 +526,13 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 py-16">
+      {/* How to Book a Bike Section - Responsive grid */}
+      <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 py-10 lg:py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8 animate-pulse-once">
+          <h2 className="text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-6 lg:mb-8 animate-pulse-once">
             How to Book a Bike
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
             {[
               {
                 step: "Step 1",
@@ -570,42 +573,43 @@ const HomePage = () => {
             ].map((step, index) => (
               <div
                 key={index}
-                className="flex flex-col items-center text-center bg-gray-50 p-6 shadow-lg transform transition-all duration-300 hover:shadow-xl hover:scale-105 animate-slide-in-from-bottom"
+                className="flex flex-col items-center text-center bg-gray-50 p-4 lg:p-6 shadow-lg transform transition-all duration-300 hover:shadow-xl hover:scale-105 animate-slide-in-from-bottom rounded-lg"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="text-indigo-500 text-2xl font-semibold mb-2">
+                <div className="text-indigo-500 text-xl lg:text-2xl font-semibold mb-1 lg:mb-2">
                   {step.step}
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                <h3 className="text-lg lg:text-xl font-bold text-gray-800 mb-1 lg:mb-2">
                   {step.title}
                 </h3>
-                <p className="text-gray-600">{step.description}</p>
+                <p className="text-gray-600 text-sm lg:text-base">{step.description}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="py-16 bg-gradient-to-r from-indigo-500 to-indigo-400 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-black mb-8 animate-float">
+      {/* Our Presence Section - Responsive grid */}
+      <div className="py-10 lg:py-16 bg-gradient-to-r from-indigo-500 to-indigo-400">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6">
+          <h2 className="text-2xl lg:text-3xl font-bold text-center text-black mb-6 lg:mb-8 animate-float">
             Our Presence
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 lg:gap-6">
             {cities.map((city, index) => (
               <div
                 key={index}
-                className="flex flex-col items-center text-center hover:bg-white hover:bg-opacity-20 p-3 rounded-lg transition-all duration-300 transform hover:scale-105 animate-fade-in"
+                className="flex flex-col items-center text-center hover:bg-white hover:bg-opacity-20 p-2 lg:p-3 rounded-lg transition-all duration-300 transform hover:scale-105 animate-fade-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="w-20 h-20 overflow-hidden rounded-full mb-4 border-2 border-white transition-all duration-300 hover:border-indigo-300">
+                <div className="w-16 h-16 lg:w-20 lg:h-20 overflow-hidden rounded-full mb-2 lg:mb-4 border-2 border-white transition-all duration-300 hover:border-indigo-300">
                   <img
                     src={`data:image/jpeg;base64,${city.image}`}
                     alt={city.name}
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                   />
                 </div>
-                <p className="text-black font-medium">{city.name}</p>
+                <p className="text-black font-medium text-sm lg:text-base">{city.name}</p>
               </div>
             ))}
           </div>
