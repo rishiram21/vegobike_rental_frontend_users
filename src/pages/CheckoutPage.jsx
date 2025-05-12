@@ -29,7 +29,7 @@ const CheckoutPage = () => {
   const [selectedCouponFromDropdown, setSelectedCouponFromDropdown] = useState("");
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [termsAccepted, setTermsAccepted] = useState(true);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [couponError, setCouponError] = useState("");
@@ -38,18 +38,18 @@ const CheckoutPage = () => {
   const [documentMessage, setDocumentMessage] = useState("");
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
 
-  useEffect(() => {
-    // Check if the URL already has our reload parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasReloaded = urlParams.get('reloaded');
+  // useEffect(() => {
+  //   // Check if the URL already has our reload parameter
+  //   const urlParams = new URLSearchParams(window.location.search);
+  //   const hasReloaded = urlParams.get('reloaded');
 
-    if (!hasReloaded) {
-      // Add the parameter and reload
-      const newUrl = window.location.pathname + '?reloaded=true' +
-                     (window.location.hash || '');
-      window.location.href = newUrl;
-    }
-  }, []);
+  //   if (!hasReloaded) {
+  //     // Add the parameter and reload
+  //     const newUrl = window.location.pathname + '?reloaded=true' +
+  //                    (window.location.hash || '');
+  //     window.location.href = newUrl;
+  //   }
+  // }, []);
 
   // Log the token when the component mounts
   useEffect(() => {

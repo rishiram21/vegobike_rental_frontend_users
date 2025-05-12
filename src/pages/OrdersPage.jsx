@@ -597,9 +597,9 @@ const OrdersPage = () => {
   if (error && !user) {
     return (
       <div className="min-h-screen text-center pt-24">
-        <h2 className="text-2xl font-bold mb-4">Error</h2>
-        <p className="text-red-500 mb-4">{error}</p>
-        <Link to="/" className="bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600">
+        {/* <h2 className="text-2xl font-bold mb-4">Error</h2> */}
+        <p className="text-red-500 mb-4 font-semibold">{error}</p>
+        <Link to="/" className="bg-indigo-500 text-white py-2 px-4 rounded hover:bg-blue-600">
           Return to Home
         </Link>
       </div>

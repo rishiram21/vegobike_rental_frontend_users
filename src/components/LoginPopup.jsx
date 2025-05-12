@@ -320,7 +320,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
                   placeholder="Enter 4-digit OTP"
                   className="border p-2 w-full mt-2"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   maxLength={4}
                   ref={otpInputRef}
                   onKeyPress={(e) => handleKeyPress(e, verifyOTP)}

@@ -484,12 +484,12 @@ const BikeDetailsPage = () => {
             Proceed to Checkout
           </button>
 
-          <button
+          {/* <button
             onClick={handleRefresh}
             className="fixed bottom-4 right-4 bg-indigo-500 text-white p-3 square shadow-lg z-50 flex items-center gap-2"
           >
             <FaSyncAlt size={24} />
-          </button>
+          </button> */}
 
           {isLoginPopupOpen && (
             <LoginPopup

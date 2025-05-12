@@ -58,7 +58,7 @@ const LoginPage = () => {
   };
 
   const verifyOTP = async () => {
-    if (otp.length !== 4) { // Changed from 4 to 6 to match the UI constraints
+    if (otp.length !== 4) { 
       setError("Enter a valid 4-digit OTP.");
       return;
     }
@@ -319,7 +319,7 @@ const LoginPage = () => {
                     placeholder="Enter 4-digit OTP"
                     className="border p-2 w-full rounded"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
                     maxLength={4}
                     ref={otpInputRef}
                     onKeyPress={(e) => handleKeyPress(e, verifyOTP)}
