@@ -28,6 +28,22 @@ const OrdersPage = () => {
   const [orderLimit, setOrderLimit] = useState(1);
 
 
+  // Handle page refresh on initial load
+  // useEffect(() => {
+  //   const reloadFlag = window.sessionStorage.getItem('pageHasReloaded');
+    
+  //   if (!reloadFlag) {
+  //     window.sessionStorage.setItem('pageHasReloaded', 'true');
+  //     const timestamp = new Date().getTime();
+  //     const refreshedUrl = window.location.pathname + 
+  //                         (window.location.search ? 
+  //                           window.location.search + '&_=' + timestamp : 
+  //                           '?_=' + timestamp);
+      
+  //     window.location.replace(refreshedUrl);
+  //   }
+  // }, []);
+
   // useEffect(() => {
   //     // Check if the URL already has our reload parameter
   //     const urlParams = new URLSearchParams(window.location.search);

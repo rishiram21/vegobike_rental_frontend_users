@@ -97,9 +97,9 @@ const BikeDetailsPage = () => {
     }
   };
 
-  const handleRefresh = () => {
-    window.location.reload();
-  };
+  // const handleRefresh = () => {
+  //   window.location.reload();
+  // };
 
   const handlePackageSelection = (pkg) => {
     setSelectedPackage(pkg);

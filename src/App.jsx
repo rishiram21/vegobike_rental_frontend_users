@@ -46,7 +46,7 @@ const WhatsAppIcon = () => {
 // Footer Wrapper Component – Only shows on /bike-list
 const ConditionalFooter = () => {
   const location = useLocation();
-  const footerVisibleRoutes = ["/", "/bike-list"];
+  const footerVisibleRoutes = ["/"];
   return footerVisibleRoutes.includes(location.pathname) ? <Footer /> : null;
 };
 
