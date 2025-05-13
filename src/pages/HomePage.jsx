@@ -31,6 +31,9 @@ const HomePage = () => {
     citySelection: false
   });
 
+  // In-memory cache to avoid sessionStorage limitations
+  const bikeCache = React.useRef(new Map());
+
   // Improved time handling function
   const formatDateForInput = (date) => {
     const year = date.getFullYear();
@@ -115,86 +118,91 @@ const HomePage = () => {
     }));
   }, [setFormData]);
 
-  // Optimize bike fetching with debounce and caching
+  // Optimize bike fetching with debounce and memory caching
   const fetchAvailableBikes = async (immediate = false) => {
-  if (!formData.location || !formData.startDate || !formData.endDate) {
-    setErrors({ location: "Please select a location and dates." });
-    return;
-  }
+    if (!formData.location || !formData.startDate || !formData.endDate) {
+      setErrors({ location: "Please select a location and dates." });
+      return;
+    }
 
-  if (!immediate) {
-    setIsLoading(true);
-  }
-  setLastFetchError(null);
+    if (!immediate) {
+      setIsLoading(true);
+    }
+    setLastFetchError(null);
 
-  const cacheKey = `bikes_${formData.cityId}_${formData.startDate}_${formData.endDate}`;
-  const cachedData = sessionStorage.getItem(cacheKey);
+    const cacheKey = `bikes_${formData.cityId}_${formData.startDate}_${formData.endDate}`;
 
-  if (cachedData && !immediate) {
-    const parsedData = JSON.parse(cachedData);
-    setAvailableBikes(parsedData);
-    setIsLoading(false);
-    return parsedData;
-  }
+    // Check in-memory cache first
+    if (bikeCache.current.has(cacheKey) && !immediate) {
+      const cachedData = bikeCache.current.get(cacheKey);
+      setAvailableBikes(cachedData);
+      setIsLoading(false);
+      return cachedData;
+    }
 
-  const startTime = new Date(formData.startDate).toISOString()
-    .replace('T', ' ')
-    .split('.')[0];
-  const endTime = new Date(formData.endDate).toISOString()
-    .replace('T', ' ')
-    .split('.')[0];
+    const startTime = new Date(formData.startDate).toISOString()
+      .replace('T', ' ')
+      .split('.')[0];
+    const endTime = new Date(formData.endDate).toISOString()
+      .replace('T', ' ')
+      .split('.')[0];
 
-  const params = {
-    cityId: formData.cityId,
-    startTime,
-    endTime,
-  };
-
-  try {
-    const response = await axios.get(
-      `${import.meta.env.VITE_BASE_URL}/vehicle/available`,
-      { params }
-    );
-    const bikesData = response.data?.content || [];
+    const params = {
+      cityId: formData.cityId,
+      startTime,
+      endTime,
+    };
 
     try {
-      sessionStorage.setItem(cacheKey, JSON.stringify(bikesData));
-    } catch (e) {
-      console.error("Failed to cache bikes data:", e);
-      // Handle the error, perhaps by notifying the user or using an alternative storage method
-    }
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/vehicle/available`,
+        { params }
+      );
+      const bikesData = response.data?.content || [];
 
-    if (bikesData.length === 0) {
+      // Store in memory cache instead of sessionStorage
+      try {
+        // Implement cache size management - keep only the 10 most recent queries
+        if (bikeCache.current.size >= 10) {
+          // Get the oldest key (first inserted)
+          const oldestKey = bikeCache.current.keys().next().value;
+          bikeCache.current.delete(oldestKey);
+        }
+        bikeCache.current.set(cacheKey, bikesData);
+      } catch (e) {
+        console.error("Failed to cache bikes data:", e);
+      }
+
+      if (bikesData.length === 0) {
+        setErrors({
+          location: "No bikes available for the selected location and time.",
+        });
+        setAvailableBikes([]);
+      } else {
+        setAvailableBikes(bikesData);
+      }
+
+      setIsLoading(false);
+      return bikesData;
+    } catch (error) {
+      console.error("Error fetching available bikes:", error);
+      setLastFetchError("Failed to fetch available bikes. Please try again.");
       setErrors({
-        location: "No bikes available for the selected location and time.",
+        location: "Failed to fetch available bikes. Please try again.",
       });
-      setAvailableBikes([]);
-    } else {
-      setAvailableBikes(bikesData);
+      setIsLoading(false);
+      return [];
     }
+  };
 
-    setIsLoading(false);
-    return bikesData;
-  } catch (error) {
-    console.error("Error fetching available bikes:", error);
-    setLastFetchError("Failed to fetch available bikes. Please try again.");
-    setErrors({
-      location: "Failed to fetch available bikes. Please try again.",
-    });
-    setIsLoading(false);
-    return [];
-  }
-};
-
-
-  // Background prefetching of bike data
+  // Background prefetching of bike data with improved throttling
   useEffect(() => {
     let timeoutId;
     if (formData.location && formData.startDate && formData.endDate) {
-      // Debounce to prevent too many requests
+      // Increase debounce time to reduce unnecessary requests
       timeoutId = setTimeout(() => {
         fetchAvailableBikes(true); // true means it's a background fetch
-      }, 300);
+      }, 500); // Increased from 300ms to 500ms for better throttling
     }
 
     return () => {
@@ -314,12 +322,12 @@ const HomePage = () => {
       // Navigate immediately if bikes are already loaded
       if (availableBikes.length > 0) {
         navigate("/bike-list", { state: { formData } });
-        
+
         // Add a small delay before reloading to ensure navigation happens
         setTimeout(() => {
           window.location.reload();
         }, 100);
-        
+
         return;
       }
 
@@ -328,7 +336,7 @@ const HomePage = () => {
 
       if (bikes.length > 0) {
         navigate("/bike-list", { state: { formData } });
-        
+
         // Add a small delay before reloading to ensure navigation happens
         setTimeout(() => {
           window.location.reload();

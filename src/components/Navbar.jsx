@@ -396,12 +396,12 @@ const Navbar = () => {
                 )}
               </div>
 
-              <button
+              {/* <button
                 onClick={handleSearch}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-500 transition-all duration-300 transform hover:scale-105 active:scale-95"
               >
                 <FaSearch />
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -532,7 +532,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          <button
+          {/* <button
             onClick={() => {
               handleSearch();
               setIsDateDropdownOpen(false);
@@ -540,7 +540,7 @@ const Navbar = () => {
             className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-500 transition duration-300"
           >
             <span>Apply</span>
-          </button>
+          </button> */}
         </div>
       )}
 
