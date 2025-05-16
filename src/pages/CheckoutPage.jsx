@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useGlobalState } from "../context/GlobalStateContext";
-import { FaRegCalendarAlt, FaMapMarkerAlt, FaClipboardCheck, FaExclamationTriangle, FaSyncAlt } from "react-icons/fa";
+import { FaRegCalendarAlt, FaMapMarkerAlt, FaClipboardCheck, FaExclamationTriangle } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import numberToWords from 'number-to-words';
-import { useAuth } from "../context/AuthContext"; // Import useAuth for token management
+import { useAuth } from "../context/AuthContext";
 
 const convertToWords = (amount) => {
   const rupees = Math.floor(amount);
@@ -19,7 +19,7 @@ const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addOrder, user } = useGlobalState();
-  const { token } = useAuth(); // Use the token from AuthContext
+  const { token } = useAuth();
 
   const [checkoutData, setCheckoutData] = useState(location.state || {});
   const [loadingData, setLoadingData] = useState(true);
@@ -37,24 +37,7 @@ const CheckoutPage = () => {
   const [showTermsError, setShowTermsError] = useState(false);
   const [documentMessage, setDocumentMessage] = useState("");
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
-
-  // useEffect(() => {
-  //   // Check if the URL already has our reload parameter
-  //   const urlParams = new URLSearchParams(window.location.search);
-  //   const hasReloaded = urlParams.get('reloaded');
-
-  //   if (!hasReloaded) {
-  //     // Add the parameter and reload
-  //     const newUrl = window.location.pathname + '?reloaded=true' +
-  //                    (window.location.hash || '');
-  //     window.location.href = newUrl;
-  //   }
-  // }, []);
-
-  // Log the token when the component mounts
-  useEffect(() => {
-    console.log("Token from AuthContext:", token);
-  }, [token]);
+  const refreshInterval = 120000;
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -87,20 +70,16 @@ const CheckoutPage = () => {
     fetchCoupons();
     loadCheckoutData();
     setLoadingData(false);
+
+    const intervalId = setInterval(() => {
+      const sessionData = sessionStorage.getItem("checkoutData");
+      if (sessionData) {
+        setCheckoutData(JSON.parse(sessionData));
+      }
+    }, refreshInterval);
+
+    return () => clearInterval(intervalId);
   }, [location.state]);
-
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-
-  const handleCheckboxChange = () => {
-    // Store the current state in sessionStorage
-    sessionStorage.setItem("termsAccepted", !termsAccepted);
-    sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData));
-
-    // Reload the page
-    window.location.reload();
-  };
 
   const {
     bike = {},
@@ -110,26 +89,19 @@ const CheckoutPage = () => {
     pickupOption = "SELF_PICKUP",
     pickupDate = new Date(),
     dropDate = new Date(),
-    storeName = ""
+    storeName = "",
+    totalPrice = 0,
   } = checkoutData;
 
   const depositAmount = bike?.deposit || 0;
   const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
 
-  // Calculate base price with extra days
-  const packagePrice = selectedPackage?.price || 0;
-  const extraDays = Math.max(rentalDays - (selectedPackage?.days || 0), 0);
-  const extraDaysPrice = extraDays * (checkoutData.oneDayPackage?.price || 0);
-  const basePrice = packagePrice + extraDaysPrice;
-
-  // Calculate GST on (basePrice + deliveryCharge)
+  const basePrice = totalPrice;
   const taxableAmount = basePrice + deliveryCharge;
   const gstAmount = taxableAmount * 0.18;
-
-  // Calculate total amount before discount
   const totalAmountBeforeDiscount = basePrice + deliveryCharge + gstAmount + depositAmount;
+  const payableAmount = Math.max(0, totalAmountBeforeDiscount - discount);
 
-  // Handle dropdown selection
   const handleDropdownChange = (e) => {
     const selectedValue = e.target.value;
     setSelectedCouponFromDropdown(selectedValue);
@@ -168,7 +140,6 @@ const CheckoutPage = () => {
             calculatedDiscount = appliedCouponData.discountValue;
           }
 
-          // Ensure discount doesn't exceed total amount
           calculatedDiscount = Math.min(calculatedDiscount, basePrice + deliveryCharge);
 
           setAppliedCoupon(appliedCouponData);
@@ -220,7 +191,7 @@ const CheckoutPage = () => {
         vehicleId: bike.id,
         userId: user.id,
         packageId: selectedPackage.id,
-        totalAmount: totalAmountBeforeDiscount - discount,
+        totalAmount: payableAmount,
         addressType: pickupOption,
         deliveryLocation: pickupOption === "DELIVERY_AT_LOCATION" ? JSON.stringify(addressDetails) : "",
         deliverySelected: pickupOption === "DELIVERY_AT_LOCATION",
@@ -231,6 +202,8 @@ const CheckoutPage = () => {
         additionalCharges: 0.0,
         paymentMethod: paymentMethod,
         couponCode: appliedCoupon?.code || null,
+        deliveryCharge: deliveryCharge,
+        depositAmount: depositAmount,
       };
 
       const response = await axios.post(
@@ -250,7 +223,7 @@ const CheckoutPage = () => {
     const completeOrder = {
       ...bookingData,
       bikeDetails: bike,
-      totalPrice: totalAmountBeforeDiscount - discount,
+      totalPrice: payableAmount,
       rentalDays,
       selectedPackage,
       pickupOption,
@@ -326,7 +299,7 @@ const CheckoutPage = () => {
               <div>
                 <h3 className="text-lg font-semibold">{bike?.model}</h3>
                 <p className="text-sm text-gray-600">
-                  Package: {selectedPackage?.days} Days (₹{selectedPackage?.price})
+                  Package: {selectedPackage?.days} Days (₹{selectedPackage?.price}/day)
                 </p>
                 <p className="text-sm text-gray-600">Duration: {rentalDays} Days</p>
               </div>
@@ -345,17 +318,15 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            {pickupOption === "DELIVERY_AT_LOCATION" && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  <FaMapMarkerAlt className="inline mr-2 text-indigo-500" />
-                  Delivery Address
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {addressDetails?.fullAddress || "Our Store Location: Rental Street"}
-                </p>
-              </div>
-            )}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">
+                <FaMapMarkerAlt className="inline mr-2 text-indigo-500" />
+                {pickupOption}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {pickupOption === "SELF_PICKUP" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
+              </p>
+            </div>
 
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">Terms & Conditions</h3>
@@ -430,39 +401,32 @@ const CheckoutPage = () => {
               <h3 className="text-lg font-semibold text-gray-700">Price Details</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Base Price:</span>
+                  <span>Total Price:</span>
                   <span>₹{basePrice}</span>
                 </div>
-
-                {deliveryCharge > 0 && (
-                  <div className="flex justify-between">
-                    <span>Delivery Charge:</span>
-                    <span>₹{deliveryCharge}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between">
+                <div className="flex justify-between text-pink-500">
+                  <span>Delivery Charge:</span>
+                  <span>₹{deliveryCharge}</span>
+                </div>
+                <div className="flex justify-between text-pink-500">
+                  <span>Security Deposit:</span>
+                  <span className="text-green-500 font-semibold">
+                    (Refundable after trip) ₹{depositAmount}
+                  </span>
+                </div>
+                <div className="flex justify-between text-pink-500">
                   <span>GST (18%):</span>
                   <span>₹{gstAmount.toFixed(2)}</span>
                 </div>
-
-                <div className="flex justify-between">
-                  <span>Security Deposit:</span>
-                  <span className="text-green-500 font-semibold">
-                    (Refundable) ₹{depositAmount}
-                  </span>
-                </div>
-
                 {discount > 0 && (
                   <div className="flex justify-between text-teal-500">
                     <span>Discount:</span>
-                    <span>-₹{discount.toFixed(2)}</span>
+                    <span>-₹{discount}</span>
                   </div>
                 )}
-
                 <div className="flex justify-between font-semibold border-t pt-2">
                   <span>Total Payable:</span>
-                  <span>₹{(totalAmountBeforeDiscount - discount).toFixed(2)}</span>
+                  <span>₹{payableAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -472,7 +436,7 @@ const CheckoutPage = () => {
                 <input
                   type="checkbox"
                   checked={termsAccepted}
-                  onChange={handleCheckboxChange}
+                  onChange={() => setTermsAccepted(!termsAccepted)}
                   className="h-4 w-4"
                 />
                 <span className="text-sm">I agree to terms & conditions</span>
@@ -489,32 +453,24 @@ const CheckoutPage = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+              <button
+                onClick={handleConfirmationRequest}
+                disabled={isProcessing}
+                className={`w-full py-2 px-4 rounded-lg transition-colors ${
+                  isProcessing
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                }`}
+              >
+                {isProcessing ? "Processing..." : `Confirm Booking: ₹${payableAmount.toFixed(2)}`}
+              </button>
               <p className="text-left mt-1 font-semibold">
-                Total Payment in Words: {convertToWords(totalAmountBeforeDiscount - discount)}
+                Total Payment in Words: {convertToWords(payableAmount)}
               </p>
             </div>
-
-            <button
-              onClick={handleConfirmationRequest}
-              disabled={isProcessing}
-              className={`w-full py-2 px-4 rounded-lg transition-colors ${
-                isProcessing
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-indigo-500 hover:bg-indigo-600 text-white"
-              }`}
-            >
-              {isProcessing ? "Processing..." : `Pay Now`}
-            </button>
           </div>
         </div>
       </div>
-
-      {/* <button
-        onClick={handleRefresh}
-        className="fixed bottom-4 right-4 bg-indigo-500 text-white p-3 square shadow-lg z-50 flex items-center gap-2"
-      >
-        <FaSyncAlt size={24} />
-      </button> */}
 
       <AnimatePresence>
         {showPaymentMethods && (
@@ -554,6 +510,48 @@ const CheckoutPage = () => {
               >
                 Cancel
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showConfirmation && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full m-4"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25 }}
+            >
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Confirm Booking</h3>
+              <p className="text-gray-600 mb-6">Are you sure you want to confirm your booking for {bike?.model}?</p>
+
+              <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-md mb-6">
+                <p className="text-indigo-700 font-medium">Total Amount: ₹{payableAmount.toFixed(2)}</p>
+                <p className="text-indigo-600 text-sm">Duration: {rentalDays} Days</p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowConfirmation(false)}
+                  className="flex-1 py-2 px-4 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePayNow}
+                  className="flex-1 py-2 px-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
+                >
+                  Confirm
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

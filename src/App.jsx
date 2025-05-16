@@ -88,7 +88,7 @@ const App = () => {
                 }
               />
             </Routes>
-            <WhatsAppIcon />
+            {/* <WhatsAppIcon /> */}
             <ConditionalFooter />
           </ConditionalNavbar>
         </Router>

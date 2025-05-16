@@ -29,19 +29,6 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
 
-  // useEffect(() => {
-  //     // Check if the URL already has our reload parameter
-  //     const urlParams = new URLSearchParams(window.location.search);
-  //     const hasReloaded = urlParams.get('reloaded');
-      
-  //     if (!hasReloaded) {
-  //       // Add the parameter and reload
-  //       const newUrl = window.location.pathname + '?reloaded=true' + 
-  //                      (window.location.hash || '');
-  //       window.location.href = newUrl;
-  //     }
-  //   }, []);
-
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
     console.log("Token from localStorage:", token);
@@ -265,11 +252,11 @@ const ProfilePage = () => {
                     value={userData?.phoneNumber}
                   />
 
-                  <ProfileDetail
+                  {/* <ProfileDetail
                     icon={<FaEnvelope className="text-lg" />}
                     label="Email Address"
                     value={userData?.email || "Add your email"}
-                  />
+                  /> */}
 
                 </div>
 

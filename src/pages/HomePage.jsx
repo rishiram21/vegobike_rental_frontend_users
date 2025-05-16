@@ -11,7 +11,6 @@ import {
 } from "react-icons/fa";
 import { useGlobalState } from "../context/GlobalStateContext";
 import axios from "axios";
-import './HomePage.css';
 
 const HomePage = () => {
   const navigate = useNavigate();
