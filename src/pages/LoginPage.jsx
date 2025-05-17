@@ -315,7 +315,7 @@ const LoginPage = () => {
               ) : (
                 <div className="space-y-4">
                   <input
-                    type="number"
+                    type="tel"
                     placeholder="Enter 4-digit OTP"
                     className="border p-2 w-full rounded"
                     value={otp}

@@ -20,20 +20,20 @@ const RazorpayButton = ({
         setIsScriptLoaded(true);
         return resolve(true);
       }
-      
+
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      
+
       script.onload = () => {
         setIsScriptLoaded(true);
         resolve(true);
       };
-      
+
       script.onerror = () => {
         setIsScriptLoaded(false);
         resolve(false);
       };
-      
+
       document.body.appendChild(script);
     });
   };
@@ -73,7 +73,7 @@ const RazorpayButton = ({
             };
 
             const verifyRes = await axios.post(
-              `${import.meta.env.VITE_BASE_URL}/api/payment/verify`,
+              `${import.meta.env.VITE_BASE_URL}/booking/payment/verify`,
               payload,
               { headers: { Authorization: `Bearer ${token}` } }
             );

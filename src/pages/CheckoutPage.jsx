@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import numberToWords from 'number-to-words';
 import { useAuth } from "../context/AuthContext";
+import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
 
 const convertToWords = (amount) => {
   const rupees = Math.floor(amount);
@@ -179,45 +180,59 @@ const CheckoutPage = () => {
   };
 
   const createBooking = async (paymentMethod) => {
-    try {
-      if (!token) throw new Error("User not logged in.");
+  try {
+    if (!token) throw new Error("User not logged in.");
 
-      const formatToLocalDateTime = (date) => {
-        const d = new Date(date);
-        return d.toISOString().slice(0, 19);
-      };
-
-      const bookingDetails = {
-        vehicleId: bike.id,
-        userId: user.id,
-        packageId: selectedPackage.id,
-        totalAmount: payableAmount,
-        addressType: pickupOption,
-        deliveryLocation: pickupOption === "DELIVERY_AT_LOCATION" ? JSON.stringify(addressDetails) : "",
-        deliverySelected: pickupOption === "DELIVERY_AT_LOCATION",
-        startTime: formatToLocalDateTime(pickupDate),
-        endTime: formatToLocalDateTime(dropDate),
-        damage: 0.0,
-        challan: 0.0,
-        additionalCharges: 0.0,
-        paymentMethod: paymentMethod,
-        couponCode: appliedCoupon?.code || null,
-        deliveryCharge: deliveryCharge,
-        depositAmount: depositAmount,
-      };
-
-      const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/booking/book`,
-        bookingDetails,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Booking creation failed:", error);
-      throw error;
+    // Validate payment method
+    const validPaymentMethods = ["CASH_ON_CENTER", "ONLINE"];
+    if (!validPaymentMethods.includes(paymentMethod)) {
+      throw new Error("Invalid payment method selected.");
     }
-  };
+
+    const formatToLocalDateTime = (date) => {
+      const d = new Date(date);
+      return d.toISOString().slice(0, 19);
+    };
+
+    const bookingDetails = {
+      vehicleId: bike.id,
+      userId: user.id,
+      packageId: selectedPackage.id,
+      totalAmount: payableAmount,
+      addressType: pickupOption,
+      deliveryLocation: pickupOption === "DELIVERY_AT_LOCATION" ? JSON.stringify(addressDetails) : "",
+      deliverySelected: pickupOption === "DELIVERY_AT_LOCATION",
+      startTime: formatToLocalDateTime(pickupDate),
+      endTime: formatToLocalDateTime(dropDate),
+      damage: 0.0,
+      challan: 0.0,
+      additionalCharges: 0.0,
+      paymentMethod: paymentMethod,
+      couponCode: appliedCoupon?.code || null,
+      deliveryCharge: deliveryCharge,
+      depositAmount: depositAmount,
+    };
+
+    console.log("Sending booking details:", bookingDetails); // Log the request payload
+
+    // Use different endpoints based on the payment method
+    const endpoint = paymentMethod === "ONLINE" ? "/booking/create" : "/booking/book";
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_URL}${endpoint}`,
+      bookingDetails,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Booking creation failed:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
+
 
   const handlePaymentSuccess = (bookingData) => {
     const completeOrder = {
@@ -259,7 +274,8 @@ const CheckoutPage = () => {
 
     try {
       const bookingData = await createBooking("ONLINE");
-      handlePaymentSuccess(bookingData);
+      setBookingData(bookingData);
+      setShowPaymentMethods(true);
     } catch (error) {
       setBookingError(error.response?.data?.message || "Booking failed");
     } finally {
@@ -499,9 +515,13 @@ const CheckoutPage = () => {
                   Cash on Delivery (COD)
                 </button>
 
-                <div className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-center">
-                  Razorpay - Coming Soon
-                </div>
+                <AsyncRazorpayButton
+                  bikeModel={bike?.model}
+                  customer={user}
+                  createBooking={createBooking}
+                  onSuccess={handlePaymentSuccess}
+                  onError={(error) => setBookingError(error.message)}
+                />
               </div>
               <button
                 onClick={() => setShowPaymentMethods(false)}

@@ -315,7 +315,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
             ) : (
               <>
                 <input
-                  type="number"
+                  type="tel"
                   placeholder="Enter 4-digit OTP"
                   className="border p-2 w-full mt-2"
                   value={otp}
