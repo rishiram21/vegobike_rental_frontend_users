@@ -194,8 +194,6 @@ const CheckoutPage = () => {
       return d.toISOString().slice(0, 19);
     };
 
-    
-
     const bookingDetails = {
       vehicleId: bike.id,
       userId: user.id,
