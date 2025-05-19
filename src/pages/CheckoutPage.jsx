@@ -194,6 +194,8 @@ const CheckoutPage = () => {
       return d.toISOString().slice(0, 19);
     };
 
+    
+
     const bookingDetails = {
       vehicleId: bike.id,
       userId: user.id,
@@ -202,8 +204,8 @@ const CheckoutPage = () => {
       addressType: pickupOption,
       deliveryLocation: pickupOption === "DELIVERY_AT_LOCATION" ? JSON.stringify(addressDetails) : "",
       deliverySelected: pickupOption === "DELIVERY_AT_LOCATION",
-      startTime: formatToLocalDateTime(pickupDate),
-      endTime: formatToLocalDateTime(dropDate),
+      startDate: formatToLocalDateTime(pickupDate),
+      endDate: formatToLocalDateTime(dropDate),
       damage: 0.0,
       challan: 0.0,
       additionalCharges: 0.0,
@@ -211,6 +213,8 @@ const CheckoutPage = () => {
       couponCode: appliedCoupon?.code || null,
       deliveryCharge: deliveryCharge,
       depositAmount: depositAmount,
+      storeId:checkoutData.storeId , //Include the storeId from checkoutData
+
     };
 
     console.log("Sending booking details:", bookingDetails); // Log the request payload

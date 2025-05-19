@@ -460,6 +460,7 @@ const BikeListPage = () => {
                                   storeName: bike.storeName,
                                   categoryName: bike.categoryName,
                                   categoryId: bike.categoryId,
+                                  storeId: bike.storeId, // Include the storeId from bike data
                                 },
                               })
                             }

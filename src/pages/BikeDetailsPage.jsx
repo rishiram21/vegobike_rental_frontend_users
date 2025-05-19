@@ -362,6 +362,8 @@ const BikeDetailsPage = () => {
       pickupDate: new Date(formData.startDate),
       dropDate: new Date(formData.endDate),
       storeName: bike.storeName || "Our Store Location: Rental Street",
+      storeId: bike.storeId, // Include the storeId from bike data
+
     };
 
     if (!isLoggedIn) {
