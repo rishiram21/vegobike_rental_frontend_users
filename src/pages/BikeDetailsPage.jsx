@@ -18,6 +18,7 @@ import RegistrationPopup from "../components/RegistrationPopup";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGlobalState } from "../context/GlobalStateContext";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const BikeDetailsPage = () => {
   const location = useLocation();
@@ -36,11 +37,13 @@ const BikeDetailsPage = () => {
   const [hourDropdownOpen, setHourDropdownOpen] = useState(false);
   const [pickupOption, setPickupOption] = useState("SELF_PICKUP");
   const [showAddressPopup, setShowAddressPopup] = useState(false);
+  const { token } = useAuth();
   const [addressDetails, setAddressDetails] = useState({
     fullAddress: "",
     pinCode: "",
     nearby: "",
   });
+ 
   const [addressErrors, setAddressErrors] = useState({
     fullAddress: false,
     pinCode: false,
@@ -51,6 +54,27 @@ const BikeDetailsPage = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { checkToken } = useAuth();
+
+// For debugging:
+  const tokenStatus = checkToken();
+  console.log("Token status:", tokenStatus);
+  
+   // Log the token when the component mounts and whenever it changes
+  useEffect(() => {
+    console.log("Token from AuthContext:", token);
+    
+    // Setup authenticated API headers if token exists
+    if (token) {
+      console.log("Setting up authenticated API with token");
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+  }, [token]);
+
+  // // Log the token when the component mounts
+  // useEffect(() => {
+  //   console.log("Token from AuthContext:", token);
+  // }, [token]);
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
@@ -647,9 +671,9 @@ const BikeDetailsPage = () => {
             <h3 className="text-lg font-bold text-gray-800">
               Total Price: ₹{totalPrice.toFixed(2)}
             </h3>
-            <p className="text-sm text-gray-600">
+            {/* <p className="text-sm text-gray-600">
               <strong>Price per {rentalType === "days" ? "day" : "hour"}:</strong> ₹{calculatePricePerUnit().toFixed(2)}
-            </p>
+            </p> */}
           </div>
 
           <button

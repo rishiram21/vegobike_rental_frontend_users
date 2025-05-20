@@ -1,5 +1,8 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import { useEffect } from "react";
 
 const LoginPopup = ({ onClose, openRegistration }) => {
   const [mobile, setMobile] = useState("");
@@ -20,6 +23,26 @@ const LoginPopup = ({ onClose, openRegistration }) => {
     setAlertMessage(message);
     setTimeout(() => setAlertMessage(null), 3000);
   };
+
+
+  const { token } = useAuth();
+  const { checkToken } = useAuth();
+
+// For debugging:
+  const tokenStatus = checkToken();
+  console.log("Token status:", tokenStatus);
+  
+   // Log the token when the component mounts and whenever it changes
+  useEffect(() => {
+    console.log("Token from AuthContext:", token);
+    
+    // Setup authenticated API headers if token exists
+    if (token) {
+      console.log("Setting up authenticated API with token");
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+  }, [token]);
+
 
   const sendOTP = async () => {
     if (mobile.length !== 10) {
@@ -88,6 +111,11 @@ const LoginPopup = ({ onClose, openRegistration }) => {
       setTimeout(() => {
         onClose();
         navigate("/checkout"); // Redirect to checkout or dashboard
+
+        // Reload the window after navigation
+        setTimeout(() => {
+          window.location.reload();
+        }, 100); // Adding a small delay to ensure navigation happens
       }, 2000);
     } catch (err) {
       setError(err.message);
@@ -95,6 +123,7 @@ const LoginPopup = ({ onClose, openRegistration }) => {
       setLoading(false);
     }
   };
+
 
   // Handle key press events for both inputs
   const handleKeyPress = (e, action) => {

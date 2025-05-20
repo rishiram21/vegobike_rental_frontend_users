@@ -4,6 +4,8 @@ import { FaUser, FaPhoneAlt, FaBars, FaTimes, FaSearch } from "react-icons/fa";
 import { IoLocationOutline } from "react-icons/io5";
 import { IoChevronDown } from "react-icons/io5";
 import { useGlobalState } from "../context/GlobalStateContext";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 
 const Navbar = () => {
   const { formData, setFormData } = useGlobalState();
@@ -21,6 +23,23 @@ const Navbar = () => {
   const buttonRef = useRef(null);
   const datePickerRef = useRef(null);
   const dateDropdownRef = useRef(null);
+  const { token } = useAuth();
+  const { checkToken } = useAuth();
+  
+  // For debugging:
+    const tokenStatus = checkToken();
+    console.log("Token status:", tokenStatus);
+    
+     // Log the token when the component mounts and whenever it changes
+    useEffect(() => {
+      console.log("Token from AuthContext:", token);
+      
+      // Setup authenticated API headers if token exists
+      if (token) {
+        console.log("Setting up authenticated API with token");
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      }
+    }, [token]);
 
   useEffect(() => {
     const storedData = JSON.parse(localStorage.getItem("formData"));

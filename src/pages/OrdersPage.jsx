@@ -168,6 +168,22 @@ const OrdersPage = () => {
   });
   const [uploadType, setUploadType] = useState(null);
   const [orderLimit, setOrderLimit] = useState(1);
+  const { checkToken } = useAuth();
+
+// For debugging:
+  const tokenStatus = checkToken();
+  console.log("Token status:", tokenStatus);
+  
+   // Log the token when the component mounts and whenever it changes
+  useEffect(() => {
+    console.log("Token from AuthContext:", token);
+    
+    // Setup authenticated API headers if token exists
+    if (token) {
+      console.log("Setting up authenticated API with token");
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+  }, [token]);
 
   const fetchOrders = useCallback(async () => {
     try {

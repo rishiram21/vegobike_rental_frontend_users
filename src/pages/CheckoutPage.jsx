@@ -20,7 +20,7 @@ const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addOrder, user } = useGlobalState();
-  const { token } = useAuth();
+  const { token,tokenLoaded  } = useAuth();
 
   const [checkoutData, setCheckoutData] = useState(location.state || {});
   const [loadingData, setLoadingData] = useState(true);
@@ -39,6 +39,30 @@ const CheckoutPage = () => {
   const [documentMessage, setDocumentMessage] = useState("");
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const refreshInterval = 120000;
+  const { checkToken } = useAuth();
+
+// For debugging:
+  const tokenStatus = checkToken();
+  console.log("Token status:", tokenStatus);
+  
+   // Log the token when the component mounts and whenever it changes
+  useEffect(() => {
+    console.log("Token from AuthContext:", token);
+    
+    // Setup authenticated API headers if token exists
+    if (tokenLoaded && token) {
+    console.log("Token from AuthContext:", token);
+    console.log("Setting up authenticated API with token");
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
+}, [token, tokenLoaded]);
+
+
+  // // Log the token when the component mounts
+  //   useEffect(() => {
+  //     console.log("Token from AuthContext:", token);
+  //   }, [token]);
+
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -292,7 +316,7 @@ const CheckoutPage = () => {
     return new Date(date).toLocaleDateString('en-GB', options);
   };
 
-  if (loadingData || couponLoading) {
+  if (!tokenLoaded || couponLoading || loadingData ) {
     return <div className="text-center py-8">Loading booking details...</div>;
   }
 
@@ -317,7 +341,7 @@ const CheckoutPage = () => {
               <div>
                 <h3 className="text-lg font-semibold">{bike?.model}</h3>
                 <p className="text-sm text-gray-600">
-                  Package: {selectedPackage?.days} Days (₹{selectedPackage?.price}/day)
+                  Package: {selectedPackage?.days} Days (₹{selectedPackage?.price})
                 </p>
                 <p className="text-sm text-gray-600">Duration: {rentalDays} Days</p>
               </div>

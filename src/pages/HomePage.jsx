@@ -324,7 +324,7 @@ const HomePage = () => {
 
         // Add a small delay before reloading to ensure navigation happens
         setTimeout(() => {
-          window.location.reload();
+          // window.location.reload();
         }, 100);
 
         return;
@@ -338,7 +338,7 @@ const HomePage = () => {
 
         // Add a small delay before reloading to ensure navigation happens
         setTimeout(() => {
-          window.location.reload();
+          // window.location.reload();
         }, 100);
       } else if (lastFetchError) {
         setErrors({ location: lastFetchError });
@@ -350,7 +350,7 @@ const HomePage = () => {
       console.error("Navigation error:", error);
       setAnimationState(prev => ({...prev, searchBtn: false}));
       // Force reload the page in case of navigation error
-      window.location.reload();
+      // window.location.reload();
     }
   };
 
