@@ -471,14 +471,14 @@ const HomePage = () => {
               <FaTimes className="text-xl transform hover:rotate-90 transition-transform duration-300" />
             </button>
             <h2 className="text-lg font-semibold mb-4">Select a City</h2>
-            <input
+            {/* <input
               type="text"
               placeholder="Search or type city to select"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 mb-4 border focus:ring-2 focus:ring-indigo-500 outline-none transition-all duration-300 rounded-md"
               autoFocus
-            />
+            /> */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto flex-grow">
               {filteredCities.map((city, index) => (
                 <div

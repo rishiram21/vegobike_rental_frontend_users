@@ -642,14 +642,14 @@ const BikeDetailsPage = () => {
             <h3 className="text-lg font-bold text-gray-800">Price Breakdown:</h3>
             {rentalType === "days" && selectedPackage && selectedPackage.days && (
               <>
-                <p className="text-sm text-gray-600">
+                {/* <p className="text-sm text-gray-600">
                   <strong>Package:</strong> {selectedPackage.days} Days (₹{selectedPackage.price})
-                </p>
-                {rentalDays > selectedPackage.days && oneDayPackage && (
+                </p> */}
+                {/* {rentalDays > selectedPackage.days && oneDayPackage && (
                   <p className="text-sm text-gray-600">
                     <strong>Extra Days:</strong> {rentalDays - selectedPackage.days} Days (₹{(rentalDays - selectedPackage.days) * oneDayPackage.price})
                   </p>
-                )}
+                )} */}
               </>
             )}
             {rentalType === "hours" && selectedPackage && selectedPackage.hours && (
