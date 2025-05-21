@@ -180,6 +180,9 @@ const CheckoutPage = () => {
       setCouponError(error.response?.data || "Error applying coupon.");
     }
   };
+  // catch (error) {
+  //     setCouponError(error.response?.data || "Error applying coupon.");
+  //   }
 
   const handleRemoveCoupon = () => {
     setCouponCode("");
@@ -419,9 +422,26 @@ const CheckoutPage = () => {
                   Apply Coupon
                 </button>
 
-                {couponError && (
-                  <p className="text-red-500 text-sm mt-1">{couponError}</p>
-                )}
+               {couponError && (
+  <div className="mt-2 flex items-start gap-2 rounded-lg bg-red-100 p-3 text-red-700 shadow-sm">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5 flex-shrink-0 text-red-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.054 0 1.578-1.14.832-1.962L13.832 4.962a1.25 1.25 0 00-1.664 0L4.25 17.038c-.746.822-.222 1.962.832 1.962z"
+      />
+    </svg>
+    <p className="text-sm font-medium">{couponError}</p>
+  </div>
+)}
+
 
                 {appliedCoupon && (
                   <div className="bg-green-50 border border-green-200 rounded p-2 mt-2">
@@ -506,9 +526,9 @@ const CheckoutPage = () => {
               >
                 {isProcessing ? "Processing..." : `Confirm Booking: ₹${payableAmount.toFixed(2)}`}
               </button>
-              <p className="text-left mt-1 font-semibold">
+              {/* <p className="text-left mt-1 font-semibold">
                 Total Payment in Words: {convertToWords(payableAmount)}
-              </p>
+              </p> */}
             </div>
           </div>
         </div>

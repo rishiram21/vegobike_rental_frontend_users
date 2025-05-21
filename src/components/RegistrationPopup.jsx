@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from 'react-router-dom';
 
 const RegistrationPopup = ({ onClose, openLogin }) => {
   const [mobile, setMobile] = useState("");
@@ -12,6 +13,7 @@ const RegistrationPopup = ({ onClose, openLogin }) => {
   const [dlFront, setDlFront] = useState(null);
   const [alertMessage, setAlertMessage] = useState(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const navigate = useNavigate();
 
   // Add refs for input fields
   const mobileInputRef = useRef(null);
@@ -105,47 +107,95 @@ const RegistrationPopup = ({ onClose, openLogin }) => {
     }
   };
 
+  // const verifyOTP = async () => {
+  //   if (!validateOTP(otp)) {
+  //     setError("Enter a valid 4-digit OTP.");
+  //     return;
+  //   }
+
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     const response = await fetch(`${import.meta.env.VITE_BASE_URL}/verify-registration-otp`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ phoneNumber: `+91${mobile}`, otp, userName }),
+  //     });
+
+  //     const data = await response.json();
+
+  //     if (!response.ok) {
+  //       throw new Error(data.message || "Invalid OTP.");
+  //     }
+
+  //     // Store JWT token in localStorage
+  //     localStorage.setItem("jwtToken", data.token);
+
+  //     // Show success animation
+  //     setShowSuccessAnimation(true);
+
+  //     // Fetch user details after successful registration
+  //     await fetchUserDetails(mobile);
+
+  //     setTimeout(() => {
+  //       onClose();
+  //       openLogin();
+  //     }, 2000);
+  //   } catch (err) {
+  //     setError(err.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+
   const verifyOTP = async () => {
-    if (!validateOTP(otp)) {
-      setError("Enter a valid 4-digit OTP.");
-      return;
+  if (!validateOTP(otp)) {
+    setError("Enter a valid 4-digit OTP.");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/verify-registration-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phoneNumber: `+91${mobile}`, otp, userName }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Invalid OTP.");
     }
 
-    setLoading(true);
-    setError("");
+    // Store JWT token in localStorage
+    localStorage.setItem("jwtToken", data.token);
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/verify-registration-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: `+91${mobile}`, otp, userName }),
-      });
+    // Show success animation
+    setShowSuccessAnimation(true);
 
-      const data = await response.json();
+    // Fetch user details after successful registration
+    await fetchUserDetails(mobile);
 
-      if (!response.ok) {
-        throw new Error(data.message || "Invalid OTP.");
-      }
-
-      // Store JWT token in localStorage
-      localStorage.setItem("jwtToken", data.token);
-
-      // Show success animation
-      setShowSuccessAnimation(true);
-
-      // Fetch user details after successful registration
-      await fetchUserDetails(mobile);
-
-      setTimeout(() => {
-        onClose();
-        openLogin();
-      }, 2000);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Redirect to a protected route after a delay
+    setTimeout(() => {
+      navigate('/checkout'); // Replace '/dashboard' with your desired protected route
+      // Reload the window after navigation
+        setTimeout(() => {
+          window.location.reload();
+        }, 100); // Adding a small delay to ensure navigation happens
+    }, 2000);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchUserDetails = async (phoneNumber) => {
     setLoading(true);

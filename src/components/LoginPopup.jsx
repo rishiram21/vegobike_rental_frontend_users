@@ -45,40 +45,47 @@ const LoginPopup = ({ onClose, openRegistration }) => {
 
 
   const sendOTP = async () => {
-    if (mobile.length !== 10) {
-      setError("Enter a valid 10-digit mobile number.");
-      return;
-    }
+  if (mobile.length !== 10) {
+    setError("Enter a valid 10-digit mobile number.");
+    return;
+  }
 
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/send-login-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: `+91${mobile}` }),
-      });
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/send-login-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phoneNumber: `+91${mobile}` }),
+    });
 
-      if (!response.ok) {
-        throw new Error("Failed to send OTP.");
+    if (!response.ok) {
+      const data = await response.json();
+      if (data.message === "User not found" || data.message === "Invalid mobile number") {
+        // Redirect to registration if the user is not found or the number is invalid
+        onClose();
+        openRegistration();
       }
-
-      setOtpSent(true);
-      showAlert("OTP sent successfully!");
-
-      // Focus on OTP input after a short delay to allow rendering
-      setTimeout(() => {
-        if (otpInputRef.current) {
-          otpInputRef.current.focus();
-        }
-      }, 100);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      throw new Error(data.message || "Failed to send OTP.");
     }
-  };
+
+    setOtpSent(true);
+    showAlert("OTP sent successfully!");
+
+    // Focus on OTP input after a short delay to allow rendering
+    setTimeout(() => {
+      if (otpInputRef.current) {
+        otpInputRef.current.focus();
+      }
+    }, 100);
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const verifyOTP = async () => {
     if (otp.length !== 4) {

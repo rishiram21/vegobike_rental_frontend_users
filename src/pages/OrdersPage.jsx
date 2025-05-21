@@ -560,14 +560,15 @@ const OrdersPage = () => {
     navigate(`/invoice/${order.booking.bookingId}`);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center">
-        <FaSpinner className="animate-spin text-indigo-500 text-4xl" />
-        <p className="mt-4 text-gray-600">Loading orders...</p>
-      </div>
-    );
-  }
+  if (loading && displayedOrders.length === 0) {
+  return (
+    <div className="min-h-screen flex flex-col justify-center items-center">
+      <FaSpinner className="animate-spin text-indigo-500 text-4xl" />
+      <p className="mt-4 text-gray-600">Loading orders...</p>
+    </div>
+  );
+}
+
 
   if (error && !user) {
     return (
@@ -642,12 +643,21 @@ const OrdersPage = () => {
 
                   {otherOrders.length > displayedOrders.length && (
                     <div className="text-center mt-2">
-                      <button
+                      {/* <button
                         onClick={handleLoadMore}
                         className="bg-orange-100 text-orange-700 px-4 py-2 rounded-full flex items-center justify-center mx-auto hover:bg-orange-200 transition-colors duration-300"
                       >
                         Load More <FaChevronDown className="ml-2" />
-                      </button>
+                      </button> */}
+                      <button
+  type="button"
+  onClick={handleLoadMore}
+  disabled={loading}
+  className={`bg-orange-100 text-orange-700 px-4 py-2 rounded-full flex items-center justify-center mx-auto hover:bg-orange-200 transition-colors duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+>
+  {loading ? "Loading..." : "Load More"} <FaChevronDown className="ml-2" />
+</button>
+
                     </div>
                   )}
                 </>

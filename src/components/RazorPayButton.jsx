@@ -125,15 +125,16 @@ const RazorpayButton = ({
 
   return (
     <button
-      onClick={handlePayment}
-      disabled={!isScriptLoaded || isProcessing || !bookingId || !orderId}
-      className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
-    >
-      {!bookingId ? "Preparing payment..." :
-       isProcessing ? "Processing..." :
-       isScriptLoaded ? `Pay ₹${amount.toFixed(2)}` :
-       "Loading payment..."}
-    </button>
+  onClick={handlePayment}
+  disabled={!isScriptLoaded || isProcessing || !bookingId || !orderId}
+  className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+>
+  {!bookingId ? "Preparing payment..." :
+   isProcessing ? "Processing..." :
+   isScriptLoaded ? `Pay ₹${(amount * 100).toFixed(2)}` :
+   "Loading payment..."}
+</button>
+
   );
 };
 
