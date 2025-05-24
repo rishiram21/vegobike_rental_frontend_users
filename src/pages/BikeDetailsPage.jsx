@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  FaTimes,
-  FaBicycle,
-  FaHandshake,
-  FaPhone,
-  FaCheck,
-  FaMapMarkerAlt,
-  FaCreditCard,
-  FaTags,
-  FaCalendarAlt,
-  FaClock,
-} from "react-icons/fa";
+import { FaMapMarkerAlt, FaTags, FaCalendarAlt } from "react-icons/fa";
 import { AiOutlineCaretDown, AiOutlineCaretUp } from "react-icons/ai";
 import LoginPopup from "../components/LoginPopup";
 import RegistrationPopup from "../components/RegistrationPopup";
@@ -49,22 +38,6 @@ const BikeDetailsPage = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { checkToken } = useAuth();
-
-  // For debugging:
-  const tokenStatus = checkToken();
-  console.log("Token status:", tokenStatus);
-
-  // Log the token when the component mounts and whenever it changes
-  useEffect(() => {
-    console.log("Token from AuthContext:", token);
-
-    // Setup authenticated API headers if token exists
-    if (token) {
-      console.log("Setting up authenticated API with token");
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    }
-  }, [token]);
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
@@ -80,43 +53,31 @@ const BikeDetailsPage = () => {
   }, [bike.categoryId]);
 
   useEffect(() => {
-    // Calculate rental duration based on formData dates
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
       const diffTime = Math.abs(end - start);
-
-      // Calculate days
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
       setRentalDays(diffDays > 0 ? diffDays : 1);
     }
   }, [formData.startDate, formData.endDate]);
 
   useEffect(() => {
     if (dayPackages.length > 0) {
-      // Find the best package based on rental days
       const bestPackage = findBestPackage(dayPackages, rentalDays);
       setSelectedPackage(bestPackage);
-
-      // Find one day package for extra days calculation
       const oneDayPkg = dayPackages.find(pkg => pkg.days === 1);
       setOneDayPackage(oneDayPkg);
     }
   }, [rentalDays, dayPackages]);
 
   const findBestPackage = (packages, days) => {
-    // Sort packages by days in descending order
     const sortedPackages = [...packages].sort((a, b) => b.days - a.days);
-
-    // Find the largest package that fits within the rental days
     for (const pkg of sortedPackages) {
       if (pkg.days <= days) {
         return pkg;
       }
     }
-
-    // If no package fits, return the smallest package
     return sortedPackages[sortedPackages.length - 1];
   };
 
@@ -126,13 +87,8 @@ const BikeDetailsPage = () => {
       const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/package/list/${categoryId}`);
       const data = response.data;
       const activePackages = data.filter(pkg => pkg.active);
-
-      // Only get day packages
       const dayPkgs = activePackages.filter(pkg => pkg.type === "day" || !pkg.type);
-
       setDayPackages(dayPkgs);
-
-      // Default to day packages if available
       if (dayPkgs.length > 0) {
         setSelectedPackage(findBestPackage(dayPkgs, rentalDays));
       }
@@ -147,16 +103,11 @@ const BikeDetailsPage = () => {
   const handlePackageSelection = (pkg) => {
     setSelectedPackage(pkg);
     setDayDropdownOpen(false);
-
-    // Update rental duration based on the selected package
     if (pkg.days) {
       setRentalDays(pkg.days);
-
-      // Update formData dates based on the selected package
       const startDate = new Date(formData.startDate || new Date());
       const endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + pkg.days);
-
       setFormData({
         ...formData,
         startDate: formatDateForInput(startDate),
@@ -166,47 +117,27 @@ const BikeDetailsPage = () => {
     }
   };
 
-  // const calculateTotalPrice = () => {
-  //   if (!selectedPackage) return 0;
-
-  //   const packagePrice = selectedPackage.price;
-  //   const extraDays = rentalDays - selectedPackage.days;
-  //   const extraDaysPrice = extraDays > 0 ? extraDays * oneDayPackage.price : 0;
-  //   const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
-
-  //   return packagePrice + extraDaysPrice + deliveryCharge;
-  // };
-
   const calculateTotalPrice = () => {
-  if (!selectedPackage || !oneDayPackage) {
-    console.error("Selected package or one day package is null");
-    return 0; // Return a default value or handle the error as needed
-  }
-
-  const packagePrice = selectedPackage.price || 0;
-  const extraDays = rentalDays - (selectedPackage.days || 0);
-  const extraDaysPrice = extraDays > 0 ? extraDays * (oneDayPackage.price || 0) : 0;
-  const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
-
-  return packagePrice + extraDaysPrice + deliveryCharge;
-};
-
-
+    if (!selectedPackage || !oneDayPackage) {
+      return 0;
+    }
+    const packagePrice = selectedPackage.price || 0;
+    const extraDays = rentalDays - (selectedPackage.days || 0);
+    const extraDaysPrice = extraDays > 0 ? extraDays * (oneDayPackage.price || 0) : 0;
+    const deliveryCharge = pickupOption === "DELIVERY_AT_LOCATION" ? 250 : 0;
+    return packagePrice + extraDaysPrice + deliveryCharge;
+  };
 
   const calculatePricePerUnit = () => {
     if (!selectedPackage) return 0;
-
     const packagePricePerDay = selectedPackage.price / selectedPackage.days;
     const extraDaysPricePerDay = oneDayPackage.price;
-
     const totalDays = rentalDays;
     const packageDays = selectedPackage.days;
     const extraDays = totalDays - packageDays;
-
     if (extraDays > 0) {
       return (packagePricePerDay * packageDays + extraDaysPricePerDay * extraDays) / totalDays;
     }
-
     return packagePricePerDay;
   };
 
@@ -223,7 +154,6 @@ const BikeDetailsPage = () => {
 
   const handleAddressChange = (field, value) => {
     setAddressDetails((prevDetails) => ({ ...prevDetails, [field]: value }));
-
     if (addressErrors[field]) {
       setAddressErrors((prevErrors) => ({ ...prevErrors, [field]: false }));
     }
@@ -234,7 +164,6 @@ const BikeDetailsPage = () => {
       fullAddress: !addressDetails.fullAddress.trim(),
       pinCode: !addressDetails.pinCode.trim()
     };
-
     setAddressErrors(errors);
     return !errors.fullAddress && !errors.pinCode;
   };
@@ -250,12 +179,10 @@ const BikeDetailsPage = () => {
       alert("Please select a rental package before proceeding.");
       return;
     }
-
     if (pickupOption === "DELIVERY_AT_LOCATION" && !addressDetails.fullAddress) {
       setShowAddressPopup(true);
       return;
     }
-
     setShowConfirmation(true);
   };
 
@@ -273,7 +200,7 @@ const BikeDetailsPage = () => {
       pickupDate: new Date(formData.startDate),
       dropDate: new Date(formData.endDate),
       storeName: bike.storeName || "Our Store Location: Rental Street",
-      storeId: bike.storeId, // Include the storeId from bike data
+      storeId: bike.storeId,
     };
 
     if (!isLoggedIn) {
@@ -298,7 +225,6 @@ const BikeDetailsPage = () => {
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
     setIsLoginPopupOpen(false);
-
     const savedData = sessionStorage.getItem('checkoutData');
     if (savedData) {
       navigate("/checkout", { state: JSON.parse(savedData) });
@@ -311,12 +237,23 @@ const BikeDetailsPage = () => {
     setIsRegistrationPopupOpen(false);
   };
 
+  const formatDateTime = (datetime) => {
+    if (!datetime) return "Select";
+    const date = new Date(datetime);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 1 }}
       animate={{ opacity: isAnimating ? 0 : 1 }}
       transition={{ duration: 0.6 }}
-      className="container mx-auto py-6 px-4 lg:px-6 mt-14 relative"
+      className="container mx-auto py-6 px-4 lg:px-6 mt-12 relative"
     >
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="flex flex-col shadow border items-center rounded-lg overflow-hidden">
@@ -328,22 +265,13 @@ const BikeDetailsPage = () => {
           <p className="mt-3 text-gray-500 text-xs italic">
             *Images are for representation purposes only.
           </p>
-          {/* Terms and Conditions Section */}
           <div className="mt-6 p-6 bg-gray-50 rounded-lg shadow-inner w-full">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Terms and Conditions</h2>
             <ul className="list-disc pl-5 space-y-2 text-gray-600">
-              <li>
-                <strong>Late fee applies after trip end from admin</strong>
-              </li>
-              <li>
-                <strong>₹100 per hour</strong>
-              </li>
-              <li>
-                <strong>Exchange bike categories and availability</strong>
-              </li>
-              <li>
-                <strong>Cancellation not allowed when booking is accepted </strong>
-              </li>
+              <li><strong>Late fee applies after trip end from admin</strong></li>
+              <li><strong>₹100 per hour</strong></li>
+              <li><strong>Exchange bike categories and availability</strong></li>
+              <li><strong>Cancellation not allowed when booking is accepted</strong></li>
             </ul>
           </div>
         </div>
@@ -351,7 +279,6 @@ const BikeDetailsPage = () => {
         <div className="bg-white p-6 rounded-lg shadow-lg space-y-6">
           <h2 className="text-2xl font-bold text-gray-800">{bike.model || "Bike Name"}</h2>
 
-          {/* Day Packages */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-700">
               <FaTags className="inline mr-2 text-indigo-400" /> Day Packages
@@ -455,11 +382,6 @@ const BikeDetailsPage = () => {
                 <p className="text-sm text-gray-600">
                   <strong>Package:</strong> {selectedPackage.days} Days (₹{selectedPackage.price})
                 </p>
-                {/* {rentalDays > selectedPackage.days && oneDayPackage && (
-                  <p className="text-sm text-gray-600">
-                    <strong>Extra Days:</strong> {rentalDays - selectedPackage.days} Days (₹{(rentalDays - selectedPackage.days) * oneDayPackage.price})
-                  </p>
-                )} */}
               </>
             )}
             {pickupOption === "DELIVERY_AT_LOCATION" && (
@@ -538,23 +460,20 @@ const BikeDetailsPage = () => {
                 Pin Code <span className="text-red-500">*</span>
               </label>
               <input
-  type="tel"
-  value={addressDetails.pinCode}
-  onChange={(e) => {
-    const value = e.target.value;
-
-    // Allow empty string (so user can delete input), or digits only up to 6 characters
-    if (value === "" || (/^\d{0,6}$/.test(value))) {
-      handleAddressChange("pinCode", value);
-    }
-  }}
-  className={`w-full p-2 border rounded text-sm ${
-    addressErrors.pinCode ? "border-red-500" : "border-gray-300"
-  }`}
-  placeholder="Enter pin code"
-  required
-/>
-
+                type="tel"
+                value={addressDetails.pinCode}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || (/^\d{0,6}$/.test(value))) {
+                    handleAddressChange("pinCode", value);
+                  }
+                }}
+                className={`w-full p-2 border rounded text-sm ${
+                  addressErrors.pinCode ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Enter pin code"
+                required
+              />
               {addressErrors.pinCode && (
                 <p className="text-red-500 text-xs mt-1">Pin code is required</p>
               )}
@@ -627,19 +546,8 @@ const BikeDetailsPage = () => {
   );
 };
 
-// Helper function to format date for display
-const formatDateTime = (datetime) => {
-  if (!datetime) return "Select";
-  const date = new Date(datetime);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
-};
-
 export default BikeDetailsPage;
+
 
 
 

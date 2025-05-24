@@ -60,7 +60,7 @@ const RazorpayButton = ({
         key: "rzp_test_6iRE2VEfQ2p7qE",
         amount: Math.round(amount * 100),
         currency: "INR",
-        name: "Ok Bikes",
+        name: "VeGo Bike",
         description: `Booking for ${bikeModel}`,
         order_id: orderId,
         handler: async (response) => {

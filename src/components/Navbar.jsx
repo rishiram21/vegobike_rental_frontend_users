@@ -193,32 +193,31 @@ const Navbar = () => {
   };
 
   const handleLogout = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/logout`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
-          'Content-Type': 'application/json',
-        },
-      });
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/logout`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("userData");
-      sessionStorage.removeItem("sessionData");
-
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Logout failed:", error);
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("userData");
-      navigate("/");
+    if (!response.ok) {
+      throw new Error("Logout failed");
     }
-  };
+  } catch (error) {
+    console.error("Logout failed:", error);
+  } finally {
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("userData");
+    sessionStorage.removeItem("sessionData");
+
+    // Full reload and navigation
+    window.location.href = "/";
+  }
+};
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -337,7 +336,7 @@ const Navbar = () => {
     return `${hours}:${minutes} ${ampm}`;
   };
 
-  const hideDateTimeRoutes = ["/profile", "/contactus", "/orders", "/checkout"];
+  const hideDateTimeRoutes = ["/","/profile", "/contactus", "/orders", "/checkout"];
   const shouldHideDateTime = hideDateTimeRoutes.includes(location.pathname);
 
   return (
@@ -362,27 +361,27 @@ const Navbar = () => {
                 className="h-8 w-8 object-contain"
               />
               <span className="text-xl font-bold text-indigo-600">
-                VeGo<span className="text-indigo-800">Bikes</span>
+                VeGo<span className="text-indigo-800">Bike</span>
               </span>
             </Link>
           </div>
 
           {/* Location Display - Mobile */}
           <div className="md:hidden flex items-center space-x-1 text-gray-600">
-            <IoLocationOutline className="text-lg text-indigo-600" />
+            {/* <IoLocationOutline className="text-lg text-indigo-600" />
             <div className="text-sm font-medium">
               {formData.location || "Pune"}
-            </div>
+            </div> */}
           </div>
 
           {/* Desktop Components - hidden in mobile */}
-          <div className="hidden md:flex items-center px-20 space-x-4 flex-grow justify-between">
+          <div className="hidden md:flex items-center px-20 space-x-4 flex-grow justify-center">
             {formData.location && (
               <div className="flex items-center space-x-1 text-gray-600">
-                <IoLocationOutline className="text-lg" />
+                {/* <IoLocationOutline className="text-lg" />
                 <div className="text-sm font-medium truncate max-w-[150px]">
                   {formData.location || "Select Location"}
-                </div>
+                </div> */}
               </div>
             )}
 
@@ -426,10 +425,10 @@ const Navbar = () => {
           {/* User Account - Hidden on mobile */}
           <div className="hidden md:flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-gray-800">
-              <FaPhoneAlt size={16} />
+              {/* <FaPhoneAlt size={16} />
               <span className="font-medium">
-                {isLoggedIn && userData?.phoneNumber ? userData.phoneNumber : "+91 9545 237 823"}
-              </span>
+                {isLoggedIn && userData?.phoneNumber ? userData.phoneNumber : "+911234567890"}
+              </span> */}
             </div>
 
             {/* User Profile Dropdown */}
@@ -442,7 +441,7 @@ const Navbar = () => {
               >
                 <FaUser />
                 <span className="hidden md:inline text-sm font-medium">
-                  {isLoggedIn && userData?.name ? userData.name : "Account"}
+                  {isLoggedIn && userData?.name ? userData.name : "Login"}
                 </span>
               </button>
 
@@ -597,10 +596,10 @@ const Navbar = () => {
 
             {/* Contact Info and Logout */}
             <div>
-              <div className="flex items-center px-3 py-3 text-gray-700 bg-gray-50 rounded-lg">
+              {/* <div className="flex items-center px-3 py-3 text-gray-700 bg-gray-50 rounded-lg">
                 <FaPhoneAlt className="mr-3 text-indigo-600" />
                 <span className="font-medium">{isLoggedIn && userData?.phoneNumber ? userData.phoneNumber : "+91 9545 237 823"}</span>
-              </div>
+              </div> */}
 
               {isLoggedIn && (
                 <button

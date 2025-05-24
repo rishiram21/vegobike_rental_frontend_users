@@ -208,7 +208,9 @@ const CheckoutPage = () => {
 
   const createBooking = async (paymentMethod) => {
   try {
-    if (!token) throw new Error("User not logged in.");
+    if (!token) {
+      throw new Error("User not logged in.");
+    }
 
     // Validate payment method
     const validPaymentMethods = ["CASH_ON_CENTER", "ONLINE"];
@@ -238,11 +240,10 @@ const CheckoutPage = () => {
       couponCode: appliedCoupon?.code || null,
       deliveryCharge: deliveryCharge,
       depositAmount: depositAmount,
-      storeId:checkoutData.storeId , //Include the storeId from checkoutData
-
+      storeId: checkoutData.storeId,
     };
 
-    console.log("Sending booking details:", bookingDetails); // Log the request payload
+    console.log("Sending booking details:", bookingDetails);
 
     // Use different endpoints based on the payment method
     const endpoint = paymentMethod === "ONLINE" ? "/booking/create" : "/booking/book";
@@ -259,6 +260,7 @@ const CheckoutPage = () => {
     throw error;
   }
 };
+
 
 
 
