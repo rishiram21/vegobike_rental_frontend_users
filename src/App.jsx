@@ -17,6 +17,8 @@ import RegistrationPage from "./pages/RegistrationPage";
 import InvoicePage from "./pages/InvoicePage";
 import ProtectedRoute from "./components/ProtectedRoute"; // Import the ProtectedRoute component
 
+
+
 // Wrapper to conditionally render the Navbar
 const ConditionalNavbar = ({ children }) => {
   const location = useLocation();
@@ -58,54 +60,16 @@ const App = () => {
       <GlobalStateProvider>
         <Router>
           <ConditionalNavbar>
-            <Routes>
+            <Routes>             
               <Route path="/" element={<HomePage />} />
               <Route path="/bike-list" element={<BikeListPage />} />
               <Route path="/bike-details" element={<BikeDetailsPage />} />
-              {/* <Route
-                path="/bike-details"
-                element={
-                  <ProtectedRoute>
-                    <BikeDetailsPage />
-                  </ProtectedRoute>
-                }
-              /> */}
               <Route path="/profile" element={<ProfilePage />} />
-              {/* <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              /> */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegistrationPage />} />
-              <Route
-                path="/orders"
-                element={
-                  <ProtectedRoute>
-                    <OrdersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/invoice/:bookingId"
-                element={
-                  <ProtectedRoute>
-                    <InvoicePage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/invoice/:bookingId" element={<InvoicePage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
-              {/* <Route
-                path="/checkout"
-                element={
-                  <ProtectedRoute>
-                    <CheckoutPage />
-                  </ProtectedRoute>
-                }
-              /> */}
               <Route path="/contactus" element={<ContactUs />} />
               <Route
                 path="*"
@@ -125,6 +89,7 @@ const App = () => {
                   </div>
                 }
               />
+              
             </Routes>
             {/* <WhatsAppIcon /> */}
             <ConditionalFooter />

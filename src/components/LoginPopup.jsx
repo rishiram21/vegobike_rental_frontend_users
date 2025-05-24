@@ -120,9 +120,9 @@ const LoginPopup = ({ onClose, openRegistration }) => {
         navigate("/checkout"); // Redirect to checkout or dashboard
 
         // Reload the window after navigation
-        setTimeout(() => {
-          window.location.reload();
-        }, 100); // Adding a small delay to ensure navigation happens
+        // setTimeout(() => {
+        //   window.location.reload();
+        // }, 100); // Adding a small delay to ensure navigation happens
       }, 2000);
     } catch (err) {
       setError(err.message);

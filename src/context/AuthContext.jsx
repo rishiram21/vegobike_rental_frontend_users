@@ -76,7 +76,9 @@ export const AuthProvider = ({ children }) => {
   // For debugging
   const checkToken = () => {
     const storedToken = localStorage.getItem("jwtToken");
-    const contextToken = token;
+    const contextToken = storedToken;
+    setIsAuthenticated(!!storedToken);
+    setToken(storedToken);
     
     console.log("localStorage token:", storedToken ? storedToken.substring(0, 10) + "..." : "null");
     console.log("Context token:", contextToken ? contextToken.substring(0, 10) + "..." : "null");

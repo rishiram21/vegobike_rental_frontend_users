@@ -19,8 +19,8 @@ const convertToWords = (amount) => {
 const CheckoutPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { addOrder, user } = useGlobalState();
-  const { token,tokenLoaded  } = useAuth();
+  const { addOrder } = useGlobalState();
+  const { token, tokenLoaded } = useAuth();
 
   const [checkoutData, setCheckoutData] = useState(location.state || {});
   const [loadingData, setLoadingData] = useState(true);
@@ -38,31 +38,40 @@ const CheckoutPage = () => {
   const [showTermsError, setShowTermsError] = useState(false);
   const [documentMessage, setDocumentMessage] = useState("");
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [userData, setUserData] = useState(null);
   const refreshInterval = 120000;
-  const { checkToken } = useAuth();
 
-// For debugging:
-  const tokenStatus = checkToken();
-  console.log("Token status:", tokenStatus);
-  
-   // Log the token when the component mounts and whenever it changes
   useEffect(() => {
-    console.log("Token from AuthContext:", token);
-    
-    // Setup authenticated API headers if token exists
-    if (tokenLoaded && token) {
-    console.log("Token from AuthContext:", token);
-    console.log("Setting up authenticated API with token");
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  }
-}, [token, tokenLoaded]);
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
 
+        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
-  // // Log the token when the component mounts
-  //   useEffect(() => {
-  //     console.log("Token from AuthContext:", token);
-  //   }, [token]);
+        if (!response.ok) {
+          throw new Error("Failed to fetch user profile");
+        }
 
+        const data = await response.json();
+        setUserData(data);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        navigate("/login");
+      }
+    };
+
+    fetchUserData();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchCoupons = async () => {
@@ -147,7 +156,7 @@ const CheckoutPage = () => {
     const payload = {
       couponCode: codeToApply,
       originalPrice: basePrice,
-      user: user.id,
+      user: userData?.id,
     };
 
     try {
@@ -180,9 +189,6 @@ const CheckoutPage = () => {
       setCouponError(error.response?.data || "Error applying coupon.");
     }
   };
-  // catch (error) {
-  //     setCouponError(error.response?.data || "Error applying coupon.");
-  //   }
 
   const handleRemoveCoupon = () => {
     setCouponCode("");
@@ -207,63 +213,59 @@ const CheckoutPage = () => {
   };
 
   const createBooking = async (paymentMethod) => {
-  try {
-    if (!token) {
-      throw new Error("User not logged in.");
+    try {
+      if (!token) {
+        throw new Error("User not logged in.");
+      }
+
+      const validPaymentMethods = ["CASH_ON_CENTER", "ONLINE"];
+      if (!validPaymentMethods.includes(paymentMethod)) {
+        throw new Error("Invalid payment method selected.");
+      }
+
+      const formatToLocalDateTime = (date) => {
+        const d = new Date(date);
+        return d.toISOString().slice(0, 19);
+      };
+
+      const bookingDetails = {
+        vehicleId: bike.id,
+        userId: userData?.id,
+        packageId: selectedPackage.id,
+        totalAmount: payableAmount,
+        addressType: pickupOption,
+        deliveryLocation: pickupOption === "DELIVERY_AT_LOCATION" ? JSON.stringify(addressDetails) : "",
+        deliverySelected: pickupOption === "DELIVERY_AT_LOCATION",
+        startDate: formatToLocalDateTime(pickupDate),
+        endDate: formatToLocalDateTime(dropDate),
+        damage: 0.0,
+        challan: 0.0,
+        additionalCharges: 0.0,
+        paymentMethod: paymentMethod,
+        couponCode: appliedCoupon?.code || null,
+        deliveryCharge: deliveryCharge,
+        depositAmount: depositAmount,
+        storeId: checkoutData.storeId,
+      };
+
+      console.log("Sending booking details:", bookingDetails);
+
+      const endpoint = paymentMethod === "ONLINE" ? "/booking/create" : "/booking/book";
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}${endpoint}`,
+        bookingDetails,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.log(userData);
+      console.log(bike);
+      console.error("Booking creation failed:", error.response?.data || error.message);
+      throw error;
     }
-
-    // Validate payment method
-    const validPaymentMethods = ["CASH_ON_CENTER", "ONLINE"];
-    if (!validPaymentMethods.includes(paymentMethod)) {
-      throw new Error("Invalid payment method selected.");
-    }
-
-    const formatToLocalDateTime = (date) => {
-      const d = new Date(date);
-      return d.toISOString().slice(0, 19);
-    };
-
-    const bookingDetails = {
-      vehicleId: bike.id,
-      userId: user.id,
-      packageId: selectedPackage.id,
-      totalAmount: payableAmount,
-      addressType: pickupOption,
-      deliveryLocation: pickupOption === "DELIVERY_AT_LOCATION" ? JSON.stringify(addressDetails) : "",
-      deliverySelected: pickupOption === "DELIVERY_AT_LOCATION",
-      startDate: formatToLocalDateTime(pickupDate),
-      endDate: formatToLocalDateTime(dropDate),
-      damage: 0.0,
-      challan: 0.0,
-      additionalCharges: 0.0,
-      paymentMethod: paymentMethod,
-      couponCode: appliedCoupon?.code || null,
-      deliveryCharge: deliveryCharge,
-      depositAmount: depositAmount,
-      storeId: checkoutData.storeId,
-    };
-
-    console.log("Sending booking details:", bookingDetails);
-
-    // Use different endpoints based on the payment method
-    const endpoint = paymentMethod === "ONLINE" ? "/booking/create" : "/booking/book";
-
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASE_URL}${endpoint}`,
-      bookingDetails,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    return response.data;
-  } catch (error) {
-    console.error("Booking creation failed:", error.response?.data || error.message);
-    throw error;
-  }
-};
-
-
-
-
+  };
 
   const handlePaymentSuccess = (bookingData) => {
     const completeOrder = {
@@ -321,7 +323,7 @@ const CheckoutPage = () => {
     return new Date(date).toLocaleDateString('en-GB', options);
   };
 
-  if (!tokenLoaded || couponLoading || loadingData ) {
+  if (!tokenLoaded || couponLoading || loadingData || !userData) {
     return <div className="text-center py-8">Loading booking details...</div>;
   }
 
@@ -565,7 +567,7 @@ const CheckoutPage = () => {
 
                 <AsyncRazorpayButton
                   bikeModel={bike?.model}
-                  customer={user}
+                  customer={userData}
                   createBooking={createBooking}
                   onSuccess={handlePaymentSuccess}
                   onError={(error) => setBookingError(error.message)}
