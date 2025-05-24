@@ -41,6 +41,10 @@ const CheckoutPage = () => {
   const [userData, setUserData] = useState(null);
   const refreshInterval = 120000;
 
+
+
+  console.log("CheckoutPage - storeId:", checkoutData.storeId);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -124,7 +128,7 @@ const CheckoutPage = () => {
     pickupDate = new Date(),
     dropDate = new Date(),
     storeName = "",
-    totalPrice = 0,
+    totalPrice = 0
   } = checkoutData;
 
   const depositAmount = bike?.deposit || 0;
