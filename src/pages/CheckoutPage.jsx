@@ -4,17 +4,8 @@ import { useGlobalState } from "../context/GlobalStateContext";
 import { FaRegCalendarAlt, FaMapMarkerAlt, FaClipboardCheck, FaExclamationTriangle } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import numberToWords from 'number-to-words';
 import { useAuth } from "../context/AuthContext";
 import AsyncRazorpayButton from "../components/AsyncRazorpayButton";
-
-const convertToWords = (amount) => {
-  const rupees = Math.floor(amount);
-  const paise = Math.round((amount - rupees) * 100);
-  const rupeesInWords = numberToWords.toWords(rupees);
-  const paiseInWords = numberToWords.toWords(paise);
-  return `${rupeesInWords} rupees and ${paiseInWords} paise`;
-};
 
 const CheckoutPage = () => {
   const location = useLocation();

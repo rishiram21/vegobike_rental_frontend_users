@@ -1,4 +1,3 @@
-// src/hooks/useApiInterceptor.js
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
  
@@ -32,5 +31,3 @@ const useApiInterceptor = () => {
 };
  
 export default useApiInterceptor;
- 
- 

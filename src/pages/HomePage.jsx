@@ -118,7 +118,7 @@ const HomePage = () => {
   // Optimize bike fetching with debounce and memory caching
   const fetchAvailableBikes = async (immediate = false) => {
     if (!formData.location || !formData.startDate || !formData.endDate) {
-      setErrors({ location: "Please select a location and dates." });
+      setErrors({ location: "Please Select City and dates." });
       return;
     }
 
@@ -308,7 +308,7 @@ const HomePage = () => {
     setAnimationState(prev => ({...prev, searchBtn: true}));
 
     if (!formData.location) {
-      setErrors({ location: "Please select a location." });
+      setErrors({ location: "Please Select City." });
       setAnimationState(prev => ({...prev, searchBtn: false}));
       return;
     }
@@ -317,10 +317,7 @@ const HomePage = () => {
       // Navigate immediately if bikes are already loaded
       if (availableBikes.length > 0) {
         navigate("/bike-list", { state: { formData } });
-
-        // Add a small delay before reloading to ensure navigation happens
         setTimeout(() => {
-          // window.location.reload();
         }, 100);
 
         return;
@@ -331,10 +328,7 @@ const HomePage = () => {
 
       if (bikes.length > 0) {
         navigate("/bike-list", { state: { formData } });
-
-        // Add a small delay before reloading to ensure navigation happens
         setTimeout(() => {
-          // window.location.reload();
         }, 100);
       } else if (lastFetchError) {
         setErrors({ location: lastFetchError });
@@ -345,8 +339,6 @@ const HomePage = () => {
     } catch (error) {
       console.error("Navigation error:", error);
       setAnimationState(prev => ({...prev, searchBtn: false}));
-      // Force reload the page in case of navigation error
-      // window.location.reload();
     }
   };
 
@@ -386,7 +378,7 @@ const HomePage = () => {
                 className="block text-indigo-800 font-medium mb-2 text-base xl:text-base"
                 htmlFor="location"
               >
-                Location
+                Select City
               </label>
               <select
                 id="location"
@@ -402,7 +394,7 @@ const HomePage = () => {
                   errors.location ? "border-red-500" : "border-gray-300"
                 }`}
               >
-                <option value="">Select a location</option>
+                <option value="">Select City</option>
                 {cities.map((city, index) => (
                   <option key={index} value={city.name}>
                     {city.name}

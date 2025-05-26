@@ -184,11 +184,7 @@ const RegistrationPopup = ({ onClose, openLogin }) => {
 
     // Redirect to a protected route after a delay
     setTimeout(() => {
-      navigate('/checkout'); // Replace '/dashboard' with your desired protected route
-      // Reload the window after navigation
-        setTimeout(() => {
-          window.location.reload();
-        }, 100); // Adding a small delay to ensure navigation happens
+      navigate('/checkout'); 
     }, 2000);
   } catch (err) {
     setError(err.message);
