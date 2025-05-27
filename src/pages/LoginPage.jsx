@@ -346,7 +346,7 @@ const LoginPage = () => {
                     ref={otpInputRef}
                     onKeyPress={(e) => handleKeyPress(e, verifyOTP)}
                   />
-                  
+                  <p>Default OTP - 1234</p>
                   <button
                     onClick={verifyOTP}
                     disabled={loading || otp.length !== 4}
