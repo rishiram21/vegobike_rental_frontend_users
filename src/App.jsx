@@ -21,7 +21,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 // Wrapper to conditionally render the Navbar
 const ConditionalNavbar = ({ children }) => {
   const location = useLocation();
-  const hideNavbarRoutes = ["/none"];
+  const hideNavbarRoutes = ["/invoice/"];
   const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
   return (
     <>

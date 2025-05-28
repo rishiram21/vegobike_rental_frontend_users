@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import Invoice from "./Invoice"; // Import the Invoice component
+import { FaSpinner } from "react-icons/fa";
 
 const InvoicePage = () => {
   const { bookingId } = useParams();
   const [invoiceDetails, setInvoiceDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false); // State to control invoice visibility
 
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
@@ -47,6 +49,7 @@ const InvoicePage = () => {
         };
 
         setInvoiceDetails(invoiceData);
+        setShowInvoice(true); // Show the invoice after fetching details
       } catch (err) {
         console.error("Error fetching invoice details:", err);
         setError("Failed to fetch invoice details. Please try again.");
@@ -58,11 +61,16 @@ const InvoicePage = () => {
     fetchInvoiceDetails();
   }, [bookingId]);
 
+  const handleCloseInvoice = () => {
+    setShowInvoice(false); // Function to close the invoice
+    navigate("/orders")
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-        <p className="mt-4 text-gray-600">Loading invoice...</p>
+        <FaSpinner className="animate-spin text-indigo-500 text-4xl" />
+        <p className="mt-4 text-gray-600">Loading orders...</p>
       </div>
     );
   }
@@ -83,19 +91,22 @@ const InvoicePage = () => {
     <div className="min-h-screen pt-24 pb-12 px-4 bg-gray-50">
       <div className="container mx-auto max-w-6xl">
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Invoice</h1>
-        <Invoice
-          booking={invoiceDetails.booking}
-          charges={invoiceDetails.charges}
-          lateCharges={0} // Assuming late charges are not applicable for users
-          challans={invoiceDetails.challans}
-          damages={invoiceDetails.damages}
-          userName={invoiceDetails.userName}
-          userPhone={invoiceDetails.userPhone}
-          vehicleNumber={invoiceDetails.vehicleNumber}
-          vehicleModel={invoiceDetails.vehicleModel}
-          packagePrice={invoiceDetails.packagePrice}
-          securityDeposit={invoiceDetails.securityDeposit}
-        />
+        {showInvoice && (
+          <Invoice
+            booking={invoiceDetails.booking}
+            charges={invoiceDetails.charges}
+            lateCharges={0} // Assuming late charges are not applicable for users
+            challans={invoiceDetails.challans}
+            damages={invoiceDetails.damages}
+            userName={invoiceDetails.userName}
+            userPhone={invoiceDetails.userPhone}
+            vehicleNumber={invoiceDetails.vehicleNumber}
+            vehicleModel={invoiceDetails.vehicleModel}
+            packagePrice={invoiceDetails.packagePrice}
+            securityDeposit={invoiceDetails.securityDeposit}
+            onClose={handleCloseInvoice} // Pass the onClose function
+          />
+        )}
       </div>
     </div>
   );

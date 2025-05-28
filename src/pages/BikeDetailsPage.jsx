@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGlobalState } from "../context/GlobalStateContext";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, ChevronDown } from 'lucide-react';
 
 const BikeDetailsPage = () => {
   const location = useLocation();
@@ -40,10 +40,8 @@ const BikeDetailsPage = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showFullScreenTerms, setShowFullScreenTerms] = useState(false);
 
-
-  const [showAll, setShowAll] = useState(false);
-  
   const terms = [
     "The Responsibility of the vehicle will remain with the customer from the time of taking the vehicle from the company to the time of leaving the vehicle in the company.",
     "If there is any major, the bike will be cleared in insurance.",
@@ -63,10 +61,63 @@ const BikeDetailsPage = () => {
     "When the customer parks the vehicle in no parking, travels with a triple seat or drives on the wrong Side, then the customer is required to pay traffic toll charges. Company is not responsible for this."
   ];
 
-  const displayedTerms = showAll ? terms : terms.slice(0, 4);
-
-
-
+  const FullScreenTermsModal = ({ terms, onClose }) => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-full overflow-y-auto p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-800">Terms & Conditions</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+          <div className="space-y-4">
+            {terms.map((term, index) => (
+              <div key={index} className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-gray-600 text-sm leading-relaxed">{term}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-600">
+            <h3 className="text-sm font-semibold text-blue-800 mb-2">Additional Important Notes:</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
+              <div className="bg-white p-2 rounded text-center">
+                <strong>Late Fee:</strong> ₹100/hour
+              </div>
+              <div className="bg-white p-2 rounded text-center">
+                <strong>Cancellation:</strong> Not allowed
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-indigo-400 text-white rounded hover:bg-indigo-500 transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
@@ -299,49 +350,23 @@ const BikeDetailsPage = () => {
             *Images are for representation purposes only.
           </p>
           <div className="mt-6 p-6 bg-gray-50 rounded-lg shadow-inner w-full">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Terms & Conditions</h2>
-      
-      <div className="space-y-3">
-        {displayedTerms.map((term, index) => (
-          <div key={index} className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <p className="text-gray-600 text-sm leading-relaxed">{term}</p>
-          </div>
-        ))}
-      </div>
-
-      <button
-        onClick={() => setShowAll(!showAll)}
-        className="mt-4 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
-      >
-        {showAll ? (
-          <>
-            <ChevronUp className="w-4 h-4" />
-            Show Less
-          </>
-        ) : (
-          <>
-            <ChevronDown className="w-4 h-4" />
-            Read More ({terms.length - 4} more terms)
-          </>
-        )}
-      </button></div>
-
-<div className="space-y-3">      
-      {showAll && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-600">
-          <h3 className="text-sm font-semibold text-blue-800 mb-2">Additional Important Notes:</h3>
-          <div className="grid grid-cols-2 gap-2 text-xs text-blue-700">
-            <div className="bg-white p-2 rounded text-center">
-              <strong>Late Fee:</strong> ₹100/hour
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Terms & Conditions</h2>
+            <div className="space-y-3">
+              {terms.slice(0, 4).map((term, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-gray-600 text-sm leading-relaxed">{term}</p>
+                </div>
+              ))}
             </div>
-            <div className="bg-white p-2 rounded text-center">
-              <strong>Cancellation:</strong> Not allowed
-            </div>
+            <button
+              onClick={() => setShowFullScreenTerms(true)}
+              className="mt-4 flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+            >
+              <ChevronDown className="w-4 h-4" />
+              Read More ({terms.length - 4} more terms)
+            </button>
           </div>
-        </div>
-      )}
-    </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-lg space-y-6">
@@ -615,6 +640,13 @@ const BikeDetailsPage = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {showFullScreenTerms && (
+        <FullScreenTermsModal
+          terms={terms}
+          onClose={() => setShowFullScreenTerms(false)}
+        />
+      )}
     </motion.div>
   );
 };

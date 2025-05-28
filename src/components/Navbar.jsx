@@ -336,11 +336,11 @@ const Navbar = () => {
     return `${hours}:${minutes} ${ampm}`;
   };
 
-  const hideDateTimeRoutes = ["/","/profile", "/contactus", "/orders", "/checkout"];
+  const hideDateTimeRoutes = ["/","/profile", "/contactus", "/orders", "/checkout","/login","/register"];
   const shouldHideDateTime = hideDateTimeRoutes.includes(location.pathname);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white text-gray-800 shadow-lg' : 'bg-white text-gray-800 shadow-md'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-indigo-400 text-gray-800 shadow-lg' : 'bg-indigo-950 text-gray-800 shadow-md'}`}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3">
           {/* Mobile Menu Toggle */}

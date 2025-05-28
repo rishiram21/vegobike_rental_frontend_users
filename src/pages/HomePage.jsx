@@ -17,7 +17,7 @@ const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [errors, setErrors] = useState({});
   const [selectedCityImage, setSelectedCityImage] = useState(
-    "/banner-freedom.jpg"  
+    "/banner-vego.png"  
   );
   const [cities, setCities] = useState([]);
   const [availableBikes, setAvailableBikes] = useState([]);
@@ -303,44 +303,66 @@ const HomePage = () => {
     }
   };
 
+  // const handleSearch = async () => {
+  //   // Add button animation
+  //   setAnimationState(prev => ({...prev, searchBtn: true}));
+
+  //   if (!formData.location) {
+  //     setErrors({ location: "Please Select City." });
+  //     setAnimationState(prev => ({...prev, searchBtn: false}));
+  //     return;
+  //   }
+
+  //   try {
+  //     // Navigate immediately if bikes are already loaded
+  //     if (availableBikes.length > 0) {
+  //       navigate("/bike-list", { state: { formData } });
+  //       setTimeout(() => {
+  //       }, 100);
+
+  //       return;
+  //     }
+
+  //     // If not loaded, fetch bikes with fast response
+  //     const bikes = await fetchAvailableBikes();
+
+  //     if (bikes.length > 0) {
+  //       navigate("/bike-list", { state: { formData } });
+  //       setTimeout(() => {
+  //       }, 100);
+  //     } else if (lastFetchError) {
+  //       setErrors({ location: lastFetchError });
+  //       setAnimationState(prev => ({...prev, searchBtn: false}));
+  //     } else {
+  //       setAnimationState(prev => ({...prev, searchBtn: false}));
+  //     }
+  //   } catch (error) {
+  //     console.error("Navigation error:", error);
+  //     setAnimationState(prev => ({...prev, searchBtn: false}));
+  //   }
+  // };
+
   const handleSearch = async () => {
-    // Add button animation
-    setAnimationState(prev => ({...prev, searchBtn: true}));
+  // Add button animation
+  setAnimationState(prev => ({...prev, searchBtn: true}));
 
-    if (!formData.location) {
-      setErrors({ location: "Please Select City." });
-      setAnimationState(prev => ({...prev, searchBtn: false}));
-      return;
-    }
+  if (!formData.location) {
+    setErrors({ location: "Please Select City." });
+    setAnimationState(prev => ({...prev, searchBtn: false}));
+    return;
+  }
 
-    try {
-      // Navigate immediately if bikes are already loaded
-      if (availableBikes.length > 0) {
-        navigate("/bike-list", { state: { formData } });
-        setTimeout(() => {
-        }, 100);
+  try {
+    // Navigate immediately without checking for available bikes
+    navigate("/bike-list", { state: { formData } });
+    setTimeout(() => {
+    }, 100);
+  } catch (error) {
+    console.error("Navigation error:", error);
+    setAnimationState(prev => ({...prev, searchBtn: false}));
+  }
+};
 
-        return;
-      }
-
-      // If not loaded, fetch bikes with fast response
-      const bikes = await fetchAvailableBikes();
-
-      if (bikes.length > 0) {
-        navigate("/bike-list", { state: { formData } });
-        setTimeout(() => {
-        }, 100);
-      } else if (lastFetchError) {
-        setErrors({ location: lastFetchError });
-        setAnimationState(prev => ({...prev, searchBtn: false}));
-      } else {
-        setAnimationState(prev => ({...prev, searchBtn: false}));
-      }
-    } catch (error) {
-      console.error("Navigation error:", error);
-      setAnimationState(prev => ({...prev, searchBtn: false}));
-    }
-  };
 
   const filteredCities = Array.isArray(cities)
     ? cities.filter((city) =>
@@ -366,7 +388,7 @@ const HomePage = () => {
         </div>
 
         {/* Form Section - 60% height on mobile, no spacing */}
-        <div className="w-full xl:w-1/2 h-3/5 xl:h-full flex flex-col justify-center items-center px-4 xl:px-8 py-0 bg-gradient-to-r from-indigo-900 to-indigo-600 slide-in-right">
+        <div className="w-full xl:w-1/2 h-3/5 xl:h-full flex flex-col justify-center items-center px-4 xl:px-8 py-0 bg-gradient-to-r from-indigo-900 to-indigo-900 slide-in-right">
           <h1 className="text-2xl sm:text-3xl md:text-4xl xl:text-4xl font-bold text-white mb-4 xl:mb-6 animate-pulse-once text-center leading-tight">
             Welcome to VegoBike
           </h1>
