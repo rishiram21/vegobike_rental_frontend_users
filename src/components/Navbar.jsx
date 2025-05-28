@@ -340,7 +340,7 @@ const Navbar = () => {
   const shouldHideDateTime = hideDateTimeRoutes.includes(location.pathname);
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-indigo-400 text-gray-800 shadow-lg' : 'bg-indigo-950 text-gray-800 shadow-md'}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-indigo-400 text-gray-800 shadow-lg' : 'bg-indigo-600 text-gray-800 shadow-md'}`}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3">
           {/* Mobile Menu Toggle */}
@@ -360,8 +360,8 @@ const Navbar = () => {
                 alt="VegoBike Logo"
                 className="h-8 w-8 object-contain"
               />
-              <span className="text-xl font-bold text-indigo-600">
-                VeGo<span className="text-indigo-800">Bike</span>
+              <span className="text-xl font-bold text-indigo-800">
+                VeGo<span className="text-indigo-900">Bike</span>
               </span>
             </Link>
           </div>

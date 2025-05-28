@@ -30,11 +30,10 @@ const CheckoutPage = () => {
   const [documentMessage, setDocumentMessage] = useState("");
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [userData, setUserData] = useState(null);
-  const refreshInterval = 120000;
 
 
 
-  console.log("CheckoutPage - storeId:", checkoutData.storeId);
+  // console.log("CheckoutPage - storeId:", checkoutData.storeId);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -105,7 +104,7 @@ const CheckoutPage = () => {
       if (sessionData) {
         setCheckoutData(JSON.parse(sessionData));
       }
-    }, refreshInterval);
+    },);
 
     return () => clearInterval(intervalId);
   }, [location.state]);
@@ -362,7 +361,7 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">
                 <FaMapMarkerAlt className="inline mr-2 text-indigo-500" />
                 {pickupOption}
@@ -370,7 +369,24 @@ const CheckoutPage = () => {
               <p className="text-sm text-gray-600">
                 {pickupOption === "SELF_PICKUP" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
               </p>
-            </div>
+            </div> */}
+            
+            <div className="space-y-4">
+  <h3 className="text-lg font-semibold text-gray-700">
+    <FaMapMarkerAlt className="inline mr-2 text-indigo-500" />
+    {pickupOption}
+  </h3>
+  <p className="text-sm text-gray-600">
+    {pickupOption === "SELF_PICKUP" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
+  </p>
+  {pickupOption === "DELIVERY_AT_LOCATION" && (
+    <div>
+      <p className="text-sm text-gray-600">Pin Code: {addressDetails?.pinCode}</p>
+      <p className="text-sm text-gray-600">Nearby Landmark: {addressDetails?.nearby}</p>
+    </div>
+  )}
+</div>
+
 
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">Terms & Conditions</h3>
@@ -442,7 +458,7 @@ const CheckoutPage = () => {
 )}
 
 
-                {appliedCoupon && (
+                {/* {appliedCoupon && (
                   <div className="bg-green-50 border border-green-200 rounded p-2 mt-2">
                     <p className="text-green-700 text-sm">
                       Applied: {appliedCoupon.couponCode} - {appliedCoupon.couponType === 'PERCENTAGE' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`}
@@ -454,7 +470,7 @@ const CheckoutPage = () => {
                       Remove
                     </button>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
 

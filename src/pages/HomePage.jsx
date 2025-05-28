@@ -390,7 +390,7 @@ const HomePage = () => {
         {/* Form Section - 60% height on mobile, no spacing */}
         <div className="w-full xl:w-1/2 h-3/5 xl:h-full flex flex-col justify-center items-center px-4 xl:px-8 py-0 bg-gradient-to-r from-indigo-900 to-indigo-900 slide-in-right">
           <h1 className="text-2xl sm:text-3xl md:text-4xl xl:text-4xl font-bold text-white mb-4 xl:mb-6 animate-pulse-once text-center leading-tight">
-            Welcome to VegoBike
+            Welcome to VeGoBike
           </h1>
           
           <div className="bg-white p-4 xl:p-8 shadow-lg w-full max-w-sm xl:max-w-md booking-form rounded-lg">
@@ -490,11 +490,11 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Why Choose VegoBike Section - Ultra responsive grid */}
+      {/* Why Choose VeGoBike Section - Ultra responsive grid */}
       <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 py-8 sm:py-10 md:py-12 lg:py-16">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-10">
           <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-center text-gray-800 mb-6 sm:mb-8 animate-bounce-once">
-            Why Choose VegoBike
+            Why Choose VeGoBike
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
             {[
