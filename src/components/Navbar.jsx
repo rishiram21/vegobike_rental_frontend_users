@@ -336,7 +336,7 @@ const Navbar = () => {
     return `${hours}:${minutes} ${ampm}`;
   };
 
-  const hideDateTimeRoutes = ["/","/profile", "/contactus", "/orders", "/checkout","/login","/register"];
+  const hideDateTimeRoutes = ["/","/profile", "/contactus", "/orders", "/checkout","/login","/register","/invoice/:bookingId"];
   const shouldHideDateTime = hideDateTimeRoutes.includes(location.pathname);
 
   return (

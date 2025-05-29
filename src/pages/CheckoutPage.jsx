@@ -30,8 +30,8 @@ const CheckoutPage = () => {
   const [documentMessage, setDocumentMessage] = useState("");
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [userData, setUserData] = useState(null);
-
-
+  const [bookingError, setBookingError] = useState("");
+  const [bookingData, setBookingData] = useState(null);
 
   // console.log("CheckoutPage - storeId:", checkoutData.storeId);
 
@@ -60,7 +60,8 @@ const CheckoutPage = () => {
         setUserData(data);
       } catch (error) {
         console.error("Error fetching user data:", error);
-        navigate("/login");
+        setBookingError("Failed to load user profile. Please try again.");
+        // Don't navigate away immediately, give user a chance to retry
       }
     };
 
@@ -74,6 +75,8 @@ const CheckoutPage = () => {
         setCoupons(response.data);
       } catch (error) {
         console.error("Failed to fetch coupons:", error);
+        // Set a user-friendly error message but don't block the checkout
+        setCouponError("Failed to load available coupons. You can still proceed without a coupon.");
       } finally {
         setCouponLoading(false);
       }
@@ -104,7 +107,7 @@ const CheckoutPage = () => {
       if (sessionData) {
         setCheckoutData(JSON.parse(sessionData));
       }
-    },);
+    }, 1000); // Added missing interval time
 
     return () => clearInterval(intervalId);
   }, [location.state]);
@@ -136,6 +139,8 @@ const CheckoutPage = () => {
     if (selectedValue) {
       setCouponCode(selectedValue);
     }
+    // Clear previous errors when user makes a new selection
+    setCouponError("");
   };
 
   const handleApplyCoupon = async () => {
@@ -147,13 +152,19 @@ const CheckoutPage = () => {
       return;
     }
 
+    if (!userData?.id) {
+      setCouponError("User data not loaded. Please refresh the page and try again.");
+      return;
+    }
+
     const payload = {
       couponCode: codeToApply,
       originalPrice: basePrice,
-      user: userData?.id,
+      user: userData.id,
     };
 
     try {
+      setCouponError(""); // Clear previous errors
       const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/coupons/apply`, payload);
 
       if (response.status === 200) {
@@ -174,13 +185,17 @@ const CheckoutPage = () => {
           setDiscount(calculatedDiscount);
           setCouponError("");
         } else {
-          setCouponError("Invalid coupon data.");
+          setCouponError("Coupon applied but details not found. Please contact support.");
         }
       } else {
         setCouponError("Failed to apply coupon. Please try again.");
       }
     } catch (error) {
-      setCouponError(error.response?.data || "Error applying coupon.");
+      console.error("Error applying coupon:", error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data || 
+                          "Error applying coupon. Please check the code and try again.";
+      setCouponError(errorMessage);
     }
   };
 
@@ -199,6 +214,11 @@ const CheckoutPage = () => {
       return;
     }
 
+    if (!userData) {
+      setBookingError("User data not loaded. Please refresh the page and try again.");
+      return;
+    }
+
     setShowPaymentMethods(true);
   };
 
@@ -209,7 +229,11 @@ const CheckoutPage = () => {
   const createBooking = async (paymentMethod) => {
     try {
       if (!token) {
-        throw new Error("User not logged in.");
+        throw new Error("User not logged in. Please log in and try again.");
+      }
+
+      if (!userData?.id) {
+        throw new Error("User data not available. Please refresh the page and try again.");
       }
 
       const validPaymentMethods = ["CASH_ON_CENTER", "ONLINE"];
@@ -224,7 +248,7 @@ const CheckoutPage = () => {
 
       const bookingDetails = {
         vehicleId: bike.id,
-        userId: userData?.id,
+        userId: userData.id,
         packageId: selectedPackage.id,
         totalAmount: payableAmount,
         addressType: pickupOption,
@@ -236,7 +260,7 @@ const CheckoutPage = () => {
         challan: 0.0,
         additionalCharges: 0.0,
         paymentMethod: paymentMethod,
-        couponCode: appliedCoupon?.code || null,
+        couponCode: appliedCoupon?.couponCode || null,
         deliveryCharge: deliveryCharge,
         depositAmount: depositAmount,
         storeId: checkoutData.storeId,
@@ -252,44 +276,77 @@ const CheckoutPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log("Booking response:", response.data);
       return response.data;
     } catch (error) {
-      console.log(userData);
-      console.log(bike);
-      console.error("Booking creation failed:", error.response?.data || error.message);
-      throw error;
+      console.error("Booking creation failed:", error);
+      
+      // Extract meaningful error message
+      let errorMessage = "Booking failed. Please try again.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data) {
+        errorMessage = typeof error.response.data === 'string' 
+          ? error.response.data 
+          : JSON.stringify(error.response.data);
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 
   const handlePaymentSuccess = (bookingData) => {
-    const completeOrder = {
-      ...bookingData,
-      bikeDetails: bike,
-      totalPrice: payableAmount,
-      rentalDays,
-      selectedPackage,
-      pickupOption,
-      addressDetails,
-      pickupDate,
-      dropDate,
-      status: "Confirmed",
-    };
+    try {
+      console.log("Payment success with booking data:", bookingData);
+      
+      const completeOrder = {
+        ...bookingData,
+        bikeDetails: bike,
+        totalPrice: payableAmount,
+        rentalDays,
+        selectedPackage,
+        pickupOption,
+        addressDetails,
+        pickupDate,
+        dropDate,
+        status: "Confirmed",
+      };
 
-    setDocumentMessage(bookingData.documentMessage || "");
-    setBookingConfirmed(true);
-    addOrder({ completeOrder });
-    navigate("/orders");
+      // Extract document message from various possible locations
+      const docMessage = bookingData.documentMessage || 
+                        bookingData.message || 
+                        bookingData.data?.documentMessage || 
+                        bookingData.data?.message || 
+                        "";
+
+      setDocumentMessage(docMessage);
+      setBookingConfirmed(true);
+      addOrder(completeOrder);
+      
+      // Clear any previous errors
+      setBookingError("");
+      setShowPaymentMethods(false);
+    } catch (error) {
+      console.error("Error processing payment success:", error);
+      setBookingError("Booking completed but there was an issue processing the response. Please check your orders.");
+    }
   };
 
   const handleCODPayment = async () => {
     setShowConfirmation(false);
+    setShowPaymentMethods(false);
     setIsProcessing(true);
+    setBookingError(""); // Clear previous errors
 
     try {
       const bookingData = await createBooking("CASH_ON_CENTER");
       handlePaymentSuccess(bookingData);
     } catch (error) {
-      setBookingError(error.response?.data?.message || "Booking failed");
+      console.error("COD Payment failed:", error);
+      setBookingError(error.message || "Cash on Delivery booking failed. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -298,27 +355,54 @@ const CheckoutPage = () => {
   const handleOnlinePayment = async () => {
     setShowConfirmation(false);
     setIsProcessing(true);
+    setBookingError(""); // Clear previous errors
 
     try {
       const bookingData = await createBooking("ONLINE");
       setBookingData(bookingData);
+      // Keep payment methods open for Razorpay integration
       setShowPaymentMethods(true);
     } catch (error) {
-      setBookingError(error.response?.data?.message || "Booking failed");
+      console.error("Online Payment setup failed:", error);
+      setBookingError(error.message || "Online payment setup failed. Please try again.");
+      setShowPaymentMethods(false);
     } finally {
       setIsProcessing(false);
     }
   };
-
-  const [bookingError, setBookingError] = useState("");
 
   const formatDate = (date) => {
     const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
     return new Date(date).toLocaleDateString('en-GB', options);
   };
 
-  if (!tokenLoaded || couponLoading || loadingData || !userData) {
-    return <div className="text-center py-8">Loading booking details...</div>;
+  // Show loading state
+  if (!tokenLoaded || couponLoading || loadingData) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p>Loading booking details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if userData failed to load
+  if (!userData && !bookingError) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-4">Failed to load user data</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -360,8 +444,8 @@ const CheckoutPage = () => {
                 </div>
               </div>
             </div>
-
-            {/* <div className="space-y-4">
+            
+            <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">
                 <FaMapMarkerAlt className="inline mr-2 text-indigo-500" />
                 {pickupOption}
@@ -369,24 +453,13 @@ const CheckoutPage = () => {
               <p className="text-sm text-gray-600">
                 {pickupOption === "SELF_PICKUP" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
               </p>
-            </div> */}
-            
-            <div className="space-y-4">
-  <h3 className="text-lg font-semibold text-gray-700">
-    <FaMapMarkerAlt className="inline mr-2 text-indigo-500" />
-    {pickupOption}
-  </h3>
-  <p className="text-sm text-gray-600">
-    {pickupOption === "SELF_PICKUP" ? storeName : addressDetails?.fullAddress || "Our Store Location: Rental Street"}
-  </p>
-  {pickupOption === "DELIVERY_AT_LOCATION" && (
-    <div>
-      <p className="text-sm text-gray-600">Pin Code: {addressDetails?.pinCode}</p>
-      <p className="text-sm text-gray-600">Nearby Landmark: {addressDetails?.nearby}</p>
-    </div>
-  )}
-</div>
-
+              {pickupOption === "DELIVERY_AT_LOCATION" && (
+                <div>
+                  <p className="text-sm text-gray-600">Pin Code: {addressDetails?.pinCode}</p>
+                  <p className="text-sm text-gray-600">Nearby Landmark: {addressDetails?.nearby}</p>
+                </div>
+              )}
+            </div>
 
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-700">Terms & Conditions</h3>
@@ -409,6 +482,7 @@ const CheckoutPage = () => {
                     value={selectedCouponFromDropdown}
                     onChange={handleDropdownChange}
                     className="w-full p-2 border rounded"
+                    disabled={coupons.length === 0}
                   >
                     <option value="">Select a Coupon</option>
                     {coupons.map((coupon) => (
@@ -424,7 +498,10 @@ const CheckoutPage = () => {
                   <input
                     type="text"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value);
+                      setCouponError(""); // Clear error when user types
+                    }}
                     placeholder="Enter coupon code"
                     className="w-full p-2 border rounded"
                   />
@@ -432,33 +509,33 @@ const CheckoutPage = () => {
 
                 <button
                   onClick={handleApplyCoupon}
-                  className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600"
+                  className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={(!couponCode.trim() && !selectedCouponFromDropdown) || !userData}
                 >
                   Apply Coupon
                 </button>
 
-               {couponError && (
-  <div className="mt-2 flex items-start gap-2 rounded-lg bg-red-100 p-3 text-red-700 shadow-sm">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-5 w-5 flex-shrink-0 text-red-600"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.054 0 1.578-1.14.832-1.962L13.832 4.962a1.25 1.25 0 00-1.664 0L4.25 17.038c-.746.822-.222 1.962.832 1.962z"
-      />
-    </svg>
-    <p className="text-sm font-medium">{couponError}</p>
-  </div>
-)}
+                {couponError && (
+                  <div className="mt-2 flex items-start gap-2 rounded-lg bg-red-100 p-3 text-red-700 shadow-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 flex-shrink-0 text-red-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.054 0 1.578-1.14.832-1.962L13.832 4.962a1.25 1.25 0 00-1.664 0L4.25 17.038c-.746.822-.222 1.962.832 1.962z"
+                      />
+                    </svg>
+                    <p className="text-sm font-medium">{couponError}</p>
+                  </div>
+                )}
 
-
-                {/* {appliedCoupon && (
+                {appliedCoupon && (
                   <div className="bg-green-50 border border-green-200 rounded p-2 mt-2">
                     <p className="text-green-700 text-sm">
                       Applied: {appliedCoupon.couponCode} - {appliedCoupon.couponType === 'PERCENTAGE' ? `${appliedCoupon.discountValue}% OFF` : `₹${appliedCoupon.discountValue} OFF`}
@@ -470,7 +547,7 @@ const CheckoutPage = () => {
                       Remove
                     </button>
                   </div>
-                )} */}
+                )}
               </div>
             </div>
 
@@ -513,11 +590,15 @@ const CheckoutPage = () => {
                 <input
                   type="checkbox"
                   checked={termsAccepted}
-                  onChange={() => setTermsAccepted(!termsAccepted)}
+                  onChange={() => {
+                    setTermsAccepted(!termsAccepted);
+                    sessionStorage.setItem("termsAccepted", JSON.stringify(!termsAccepted));
+                  }}
                   className="h-4 w-4"
                 />
                 <span className="text-sm">I agree to terms & conditions</span>
               </div>
+              
               <AnimatePresence>
                 {showTermsError && (
                   <motion.div
@@ -530,25 +611,24 @@ const CheckoutPage = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+              
               <button
                 onClick={handleConfirmationRequest}
-                disabled={isProcessing}
+                disabled={isProcessing || !userData}
                 className={`w-full py-2 px-4 rounded-lg transition-colors ${
-                  isProcessing
+                  isProcessing || !userData
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-indigo-500 hover:bg-indigo-600 text-white"
                 }`}
               >
                 {isProcessing ? "Processing..." : `Confirm Booking: ₹${payableAmount.toFixed(2)}`}
               </button>
-              {/* <p className="text-left mt-1 font-semibold">
-                Total Payment in Words: {convertToWords(payableAmount)}
-              </p> */}
             </div>
           </div>
         </div>
       </div>
 
+      {/* Payment Methods Modal */}
       <AnimatePresence>
         {showPaymentMethods && (
           <motion.div
@@ -573,7 +653,7 @@ const CheckoutPage = () => {
                     isProcessing ? "cursor-not-allowed opacity-75" : ""
                   }`}
                 >
-                  Cash on Delivery (COD)
+                  {isProcessing ? "Processing..." : "Cash on Delivery (COD)"}
                 </button>
 
                 <AsyncRazorpayButton
@@ -581,13 +661,17 @@ const CheckoutPage = () => {
                   customer={userData}
                   createBooking={createBooking}
                   onSuccess={handlePaymentSuccess}
-                  onError={(error) => setBookingError(error.message)}
+                  onError={(error) => {
+                    console.error("Razorpay error:", error);
+                    setBookingError(error.message || "Payment failed. Please try again.");
+                    setShowPaymentMethods(false);
+                  }}
                 />
               </div>
               <button
                 onClick={() => setShowPaymentMethods(false)}
                 disabled={isProcessing}
-                className="mt-4 w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                className="mt-4 w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -596,6 +680,7 @@ const CheckoutPage = () => {
         )}
       </AnimatePresence>
 
+      {/* Confirmation Modal */}
       <AnimatePresence>
         {showConfirmation && (
           <motion.div

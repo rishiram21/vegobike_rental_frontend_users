@@ -21,11 +21,13 @@ import NotFoundPage from "./pages/NotFoundPage";
 // Wrapper to conditionally render the Navbar
 const ConditionalNavbar = ({ children }) => {
   const location = useLocation();
-  const hideNavbarRoutes = ["/invoice/"];
-  const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
+  
+  // Check if current path starts with /invoice
+  const shouldHideNavbar = location.pathname.startsWith("/invoice");
+  
   return (
     <>
-      {shouldShowNavbar && <Navbar />}
+      {!shouldHideNavbar && <Navbar />}
       {children}
     </>
   );
@@ -71,7 +73,6 @@ const App = () => {
 
               <Route path="/orders" element={<OrdersPage />} />
 
-              {/* <Route path="/invoice/:bookingId" element={<InvoicePage />} /> */}
               <Route
                 path="/invoice/:bookingId"
                 element={
@@ -89,7 +90,6 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-              {/* <Route path="/checkout" element={<CheckoutPage />} /> */}
 
               <Route path="/contactus" element={<ContactUs />} />
 

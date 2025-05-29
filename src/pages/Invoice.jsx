@@ -38,7 +38,7 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
   // Function to handle invoice download as PDF
   const handleDownload = () => {
     const invoiceElement = document.getElementById('invoice-container');
-    const invoiceId = `OkBikes_Invoice_${booking?.bookingId || 'Invoice'}`;
+    const invoiceId = `VeGoBike_Invoice_${booking?.bookingId || 'Invoice'}`;
     
     // Create a temporary invisible button
     const downloadStatusElement = document.createElement('div');
@@ -98,11 +98,12 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
 
   return (
     <div className="bg-white min-h-screen w-full print:min-h-0 print:w-auto relative">
-      {/* Close Button */}
+      {/* Close Button - Positioned outside the header area */}
       <button 
         id="close-button"
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 text-white bg-blue-700 hover:bg-blue-800 rounded-full p-2 shadow-lg print:hidden"
+        className="fixed top-6 right-6 z-50 text-white bg-gray-700 hover:bg-gray-800 rounded-full p-3 shadow-lg print:hidden transition-colors duration-200"
+        style={{ zIndex: 9999 }}
         aria-label="Close invoice"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -111,19 +112,26 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
       </button>
 
       {/* Invoice Container */}
-      <div id="invoice-container">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-8 rounded-t-lg flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div>
-              <img src="/vegologo.png" alt="VegoBike Logo" className="h-10 w-10" />
-              <h1 className="text-3xl font-bold tracking-tight">VegoBike</h1>
+      <div id="invoice-container" className="relative">
+        {/* Header - Improved layout with proper spacing */}
+        <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-8 rounded-t-lg">
+          <div className="flex justify-between items-start">
+            {/* Left side - Logo and Company */}
+            <div className="flex items-center space-x-4 flex-1">
+              <div className="flex items-center space-x-3">
+                <img src="/vegologo.png" alt="VegoBike Logo" className="h-12 w-12" />
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">VeGoBike</h1>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="text-right">
-            <h2 className="text-2xl font-bold tracking-wide uppercase">Invoice</h2>
-            <div className="bg-blue-700 px-3 py-1 rounded mt-1 inline-block">
-              <p className="text-blue-100">OKB-{booking?.bookingId}</p>
+            
+            {/* Right side - Invoice details with proper margin */}
+            <div className="text-right flex-shrink-0 mr-16">
+              <h2 className="text-2xl font-bold tracking-wide uppercase mb-2">Invoice</h2>
+              <div className="bg-blue-700 px-4 py-2 rounded inline-block">
+                <p className="text-blue-100 font-medium">VEGO-{booking?.bookingId}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -139,13 +147,13 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
         {/* Body */}
         <div className="p-8">
           {/* Address and Date Section */}
-          <div className="flex justify-between mb-8">
-            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-800 w-5/12">
+          <div className="flex justify-between mb-8 gap-6">
+            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-800 flex-1">
               <h3 className="font-bold text-gray-700 mb-2 text-sm uppercase tracking-wider">Billed To:</h3>
               <p className="text-gray-800 font-medium text-lg">{userName}</p>
               <p className="text-gray-600">{userPhone}</p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-800 w-5/12">
+            <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-800 flex-1">
               <h3 className="font-bold text-gray-700 mb-2 text-sm uppercase tracking-wider">Payment Details:</h3>
               <p className="text-gray-600">Payment Mode: <span className="font-medium">{booking?.paymentMethod || "Cash On Center"}</span></p>
               <p className="text-gray-600">Security Deposit: <span className="font-medium">₹{securityDeposit}</span></p>
@@ -229,10 +237,6 @@ const Invoice = ({ booking, charges, lateCharges = 0, challans = [], damages = [
                     <td className="py-3 px-4 text-gray-700">GST (18%)</td>
                     <td className="py-3 px-4 text-gray-700 text-right">₹{gst.toFixed(2)}</td>
                   </tr>
-                  {/* <tr>
-                    <td className="py-3 px-4 text-gray-700">Convenience Fee</td>
-                    <td className="py-3 px-4 text-gray-700 text-right">₹{convenienceFee.toFixed(2)}</td>
-                  </tr> */}
                   {charges.map((charge, index) => (
                     <tr key={index}>
                       <td className="py-3 px-4 text-gray-700">{charge.type}</td>
